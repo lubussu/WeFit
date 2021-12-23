@@ -26,6 +26,8 @@ import static com.mongodb.client.model.Sorts.descending;
 
 import org.bson.conversions.Bson;
 
+import javax.print.Doc;
+
 public class WorkoutRoutineCreator {
     static ConnectionString uri;
     static MongoClient myClient;
@@ -34,28 +36,27 @@ public class WorkoutRoutineCreator {
     static MongoCollection<Document> exercises;
     static MongoCollection<Document> routines;
     static MongoCollection<Document> users;
-    static ArrayList<String> muscols = new ArrayList<String>();
+    static ArrayList<String> muscles = new ArrayList<String>();
 
 
     private static Consumer<Document> printDocuments() {
         return doc -> System.out.println(doc.toJson());
     }
 
-    private static Consumer<Document> createEx(ArrayList<Document> docs, boolean x){
+    private static void createEx(Document doc, ArrayList<Document> docs, boolean x){
         Document ex = new Document();
-        return doc -> {
-            ex.append("name", doc.getString("name"))
-                    .append("muscle_targeted", doc.getString("muscle_targeted"))
-                    .append("equipment", doc.getString("equipment"))
-                    .append("type", doc.getString("type"));
-            docs.add(ex);
-            if(x){
-                int weight = createWeight(doc.getString("muscle_targeted"), doc.getString("equipment"),"Beginner");
-                if(weight>0)
-                    ex.append("weight",weight);
-            }
-        };
+        ex.append("name", doc.getString("name"))
+                .append("muscle_targeted", doc.getString("muscle_targeted"))
+                .append("equipment", doc.getString("equipment"))
+                .append("type", doc.getString("type"));
+        if(x){
+            int weight = createWeight(doc.getString("muscle_targeted"), doc.getString("equipment"),"Beginner");
+            if(weight>0)
+                ex.append("weight",weight);
+        }
+        docs.add(ex);
     }
+
     private static int weightMuscle(String muscle, String level){
         ThreadLocalRandom tlr = ThreadLocalRandom.current();
         switch (muscle) {
@@ -130,7 +131,7 @@ public class WorkoutRoutineCreator {
         }
     }
 
-    private static void beginnerRoutine(Document user){
+    private static void createRoutine(Document user, String level){
         String s;
         Document routine = new Document("user", user.getString("athlete_id"));
 
@@ -138,62 +139,41 @@ public class WorkoutRoutineCreator {
         Bson sample = sample(1);
         s = users.aggregate(Arrays.asList(match, sample)).first().getString("athlete_id");
         routine.append("trainer", s)
-                .append("level", "Beginner")
+                .append("level", level)
                 .append("work_time(sec)",30)
                 .append("rest_time(sec", 10)
                 .append("repeat", 3);
 
-        ArrayList<Document> docs = new ArrayList<>();
-        match = match(and(eq("type","Cardio"),eq("level","Beginner")));
+        ArrayList<Document> warm_up = new ArrayList<>();
+        match = match(and(eq("type","Cardio"),eq("level",level)));
         sample = sample(3);
-        exercises.aggregate(Arrays.asList(match,sample)).forEach(createEx(docs, false));
-        routine.append("warm_up", docs);
+        AggregateIterable<Document> output = exercises.aggregate(Arrays.asList(match,sample));
+        for(Document d: output)
+            createEx(d, warm_up, false);
+        routine.append("warm_up", warm_up);
 
-        docs.clear();
-        for(String m: muscols){
+        ArrayList<Document> exs = new ArrayList<>();
+        for(String m: muscles){
             match = match(and(
-                    eq("muscle_targeted",m),eq("level","Beginner"),
+                    eq("muscle_targeted",m),eq("level",level),
                             ne("type","Stretching")));
             sample = sample(1);
-            exercises.aggregate(Arrays.asList(match,sample)).forEach(createEx(docs, true));
-
+            output = exercises.aggregate(Arrays.asList(match,sample));
+            for(Document d:output)
+                createEx(d, exs, true);
         }
-        routine.append("exercises",docs);
+        routine.append("exercises",exs);
 
-        docs.clear();
-        match = match(and(eq("type","Stretching"),eq("level","Beginner")));
+        ArrayList<Document> stretch = new ArrayList<>();
+        match = match(and(eq("type","Stretching"),eq("level",level)));
         sample = sample(3);
-        exercises.aggregate(Arrays.asList(match,sample)).forEach(createEx(docs, false));
-        routine.append("stretching", docs);
+        output = exercises.aggregate(Arrays.asList(match,sample));
+        for(Document d:output)
+            createEx(d, stretch, true);
+        routine.append("stretching", stretch);
 
+        System.out.println("----------------------------------------------------------------------");
         System.out.println(routine.toJson());
-    }
-    private static void intermediateRoutine(Document user){
-    }
-    private static void expertRoutine(Document user){
-    }
-
-    private static void createRoutine(){
-
-        try (MongoCursor<Document> cursor = users.find(eq("trainer","no")).iterator()) {
-            while (cursor.hasNext()) {
-                Document user = cursor.next();
-                switch(user.getString("level")){
-                    case "Beginner": {
-                        beginnerRoutine(user);
-                        return;
-                    }
-                    case "Intermediate": {
-                        intermediateRoutine(user);
-                        break;
-                    }
-                    case "Expert": {
-                        expertRoutine(user);
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     public static void main(String[] args) {
@@ -207,9 +187,17 @@ public class WorkoutRoutineCreator {
 
 
         Bson group = group("$muscle_targeted", sum("count", 1));
-        exercises.aggregate(Arrays.asList(group)).forEach(doc -> muscols.add(doc.getString("_id")));
+        exercises.aggregate(Arrays.asList(group)).forEach(doc -> muscles.add(doc.getString("_id")));
 
-        createRoutine();
+        try (MongoCursor<Document> cursor = users.find(eq("trainer","no")).iterator()) {
+            while (cursor.hasNext()) {
+                Document user = cursor.next();
+                String level = user.getString("level");
+                if(level==null)
+                    continue;
+                createRoutine(user, level);
+            }
+        }
 
         myClient.close();
     }
