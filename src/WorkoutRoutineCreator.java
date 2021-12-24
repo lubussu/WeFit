@@ -185,7 +185,6 @@ public class WorkoutRoutineCreator {
         routines = db.getCollection("routines");
         users = db.getCollection("users");
 
-
         Bson group = group("$muscle_targeted", sum("count", 1));
         exercises.aggregate(Arrays.asList(group)).forEach(doc -> muscles.add(doc.getString("_id")));
 
@@ -196,9 +195,9 @@ public class WorkoutRoutineCreator {
                 if(level==null)
                     continue;
                 createRoutine(user, level);
+                break;
             }
         }
-
         myClient.close();
     }
 }
