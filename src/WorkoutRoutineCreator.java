@@ -176,7 +176,7 @@ public class WorkoutRoutineCreator {
         System.out.println(routine.toJson());
     }
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         uri = new ConnectionString("mongodb://localhost:27017");
         myClient = MongoClients.create(uri);
         db = myClient.getDatabase("wefit");
@@ -199,5 +199,5 @@ public class WorkoutRoutineCreator {
             }
         }
         myClient.close();
-    }
+    }*/
 }
