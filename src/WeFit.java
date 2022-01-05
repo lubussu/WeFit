@@ -2,6 +2,8 @@ import com.mongodb.ConnectionString;
 import com.mongodb.client.*;
 import org.bson.Document;
 import org.neo4j.driver.*;
+import org.neo4j.driver.types.Node;
+import org.neo4j.driver.types.Path;
 
 import java.util.Scanner;
 
@@ -10,14 +12,13 @@ import static org.neo4j.driver.Values.parameters;
 
 public class WeFit {
     public static void main(String[] args) {
-            /*ConnectionString uri = new ConnectionString("mongodb://localhost:27017");
-            MongoClient myClient = MongoClients.create(uri);
-            MongoDatabase database = myClient.getDatabase("mydb");
-            MongoCollection<Document> collection = database.getCollection("test");
-            Document doc = Document.parse("{name:\"Gionatan\", surname:\"Gallo\"}");
-            collection.insertOne(doc);*/
-            /*Neo4jdb neo = new Neo4jdb("bolt://localhost:7687", "neo4j", "acul");
-            neo.addPerson("stefano");*/
+        /*ConnectionString uri = new ConnectionString("mongodb://localhost:27017");
+        MongoClient myClient = MongoClients.create(uri);
+        MongoDatabase database = myClient.getDatabase("wefit");
+        MongoCollection<Document> collection = database.getCollection("users");
+        Document doc = Document.parse("{name:\"Gionatan\", surname:\"Gallo\"}");
+        collection.insertOne(doc);*/
+        //addPerson("stefano");
 
         System.out.println("*******************************************\n" +
                 "Welcome to the WeFit app\n" +
@@ -81,5 +82,14 @@ public class WeFit {
                     break;
             }
         }
+    }
+    public static void addPerson(String name)
+    {
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
+
+        try ( Session session = driver.session() )
+        {
+            session.run("CREATE (a:Person {name: $name})", parameters("name", name));
+        };
     }
 }
