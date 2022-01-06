@@ -1,15 +1,9 @@
-
+package wefit;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.*;
-import com.mongodb.client.model.Accumulators;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
-import org.bson.json.JsonWriterSettings;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
@@ -17,11 +11,7 @@ import java.util.function.Consumer;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 import static com.mongodb.client.model.Aggregates.*;
-import static com.mongodb.client.model.Projections.*;
-import static com.mongodb.client.model.Accumulators.*;
-import static com.mongodb.client.model.Accumulators.addToSet;
 import static com.mongodb.client.model.Accumulators.sum;
-import static com.mongodb.client.model.Sorts.descending;
 
 
 import org.bson.conversions.Bson;
@@ -62,7 +52,8 @@ public class WorkoutRoutineCreator {
         switch (muscle) {
             case "Chest": {
                 switch(level){
-                    case "Beginner": return tlr.nextInt(20, 30 + 1);
+                    case "Beginner":
+                        return tlr.nextInt(20, 30 + 1);
                     case "Intermediate": return tlr.nextInt(30, 40 + 1);
                     case "Expert": return tlr.nextInt(40, 50 + 1);
                 }
@@ -131,7 +122,7 @@ public class WorkoutRoutineCreator {
         }
     }
 
-    private static void createRoutine(Document user, String level){
+    private static void createRoutine(Document user, String level, long start){
         String s;
         Document routine = new Document("user", user.getString("athlete_id"));
 
@@ -141,22 +132,46 @@ public class WorkoutRoutineCreator {
         routine.append("trainer", s)
                 .append("level", level)
                 .append("work_time(sec)",30)
-                .append("rest_time(sec", 10)
+                .append("rest_time(sec)", 10)
                 .append("repeat", 3);
 
         ArrayList<Document> warm_up = new ArrayList<>();
-        match = match(and(eq("type","Cardio"),eq("level",level)));
-        sample = sample(3);
+        switch (level){ //scelgo gli esercizi tra quelli dello stesso livello o inferiori
+            case "Beginner":
+                match = match(and(eq("type","Cardio"),eq("level","Beginner")));
+                break;
+            case "Intermediate":
+                match = match(and(eq("type","Cardio"),or(eq("level","Intermediate"),eq("level","Beginner"))));
+                break;
+            case "Expert":
+                match = match(and(eq("type","Cardio"),or(eq("level","Intermediate"),eq("level","Beginner"),eq("level","Expert"))));
+                break;
+        }
+        sample = sample(3); //scelgo casualmente 3 esercizi tra quelli trovati
         AggregateIterable<Document> output = exercises.aggregate(Arrays.asList(match,sample));
         for(Document d: output)
             createEx(d, warm_up, false);
-        routine.append("warm_up", warm_up);
+        routine.append("warm_up", warm_up); //aggiungo l'esercizio alla routine (solo alcuni attributi)
 
         ArrayList<Document> exs = new ArrayList<>();
         for(String m: muscles){
-            match = match(and(
-                    eq("muscle_targeted",m),eq("level",level),
+            switch (level){ //scelgo gli esercizi tra quelli dello stesso livello o inferiori
+                case "Beginner":
+                    match = match(and(
+                            eq("muscle_targeted",m),eq("level","Beginner"),
                             ne("type","Stretching")));
+                    break;
+                case "Intermediate":
+                    match = match(and(
+                            eq("muscle_targeted",m),or(eq("level","Beginner"),eq("level","Intermediate")),
+                            ne("type","Stretching")));
+                    break;
+                case "Expert":
+                    match = match(and(
+                            eq("muscle_targeted",m),or(eq("level","Beginner"),eq("level","Intermediate"),eq("level","Expert")),
+                            ne("type","Stretching")));
+                    break;
+            }
             sample = sample(1);
             output = exercises.aggregate(Arrays.asList(match,sample));
             for(Document d:output)
@@ -165,18 +180,52 @@ public class WorkoutRoutineCreator {
         routine.append("exercises",exs);
 
         ArrayList<Document> stretch = new ArrayList<>();
-        match = match(and(eq("type","Stretching"),eq("level",level)));
+        switch (level){ //scelgo gli esercizi tra quelli dello stesso livello o inferiori
+            case "Beginner":
+                match = match(and(eq("type","Stretching"),eq("level","Beginner")));
+                break;
+            case "Intermediate":
+                match = match(and(eq("type","Stretching"),or(eq("level","Intermediate"),eq("level","Beginner"))));
+                break;
+            case "Expert":
+                match = match(and(eq("type","Stretching"),or(eq("level","Intermediate"),eq("level","Beginner"),eq("level","Expert"))));
+                break;
+        }
         sample = sample(3);
         output = exercises.aggregate(Arrays.asList(match,sample));
         for(Document d:output)
             createEx(d, stretch, true);
         routine.append("stretching", stretch);
+        routine.append("starting_day", LocalDate.ofEpochDay(start).toString());
+        routine.append("end_day", LocalDate.ofEpochDay(start).plusDays(30).toString());
 
-        System.out.println("----------------------------------------------------------------------");
-        System.out.println(routine.toJson());
+        routines.insertOne(routine);
+        //System.out.println("----------------------------------------------------------------------");
+        //System.out.println(routine.toJson());
     }
 
-    /*public static void main(String[] args) {
+    public static void comments(){
+        MongoCollection<Document> comments = db.getCollection("comments");
+        String utente;
+        String routine;
+
+        int count=1;
+        try (MongoCursor<Document> cursor = comments.find(or(eq("user",null),eq("routine", null))).iterator()) {
+            while (cursor.hasNext()) {
+                System.out.println(count);
+                Document com = cursor.next();
+                Bson sample = sample(1);
+                utente = users.aggregate(Arrays.asList(sample)).first().getString("athlete_id");
+                routine = routines.aggregate(Arrays.asList(sample)).first().getObjectId("_id").toString();
+                comments.updateOne(com, set("user",utente));
+                comments.updateOne(com, set("routine",routine));
+                count++;
+            }
+        }
+
+    }
+/*
+    public static void main(String[] args) {
         uri = new ConnectionString("mongodb://localhost:27017");
         myClient = MongoClients.create(uri);
         db = myClient.getDatabase("wefit");
@@ -185,19 +234,64 @@ public class WorkoutRoutineCreator {
         routines = db.getCollection("routines");
         users = db.getCollection("users");
 
+        // array con tutti i gruppi muscolaru
         Bson group = group("$muscle_targeted", sum("count", 1));
         exercises.aggregate(Arrays.asList(group)).forEach(doc -> muscles.add(doc.getString("_id")));
 
-        try (MongoCursor<Document> cursor = users.find(eq("trainer","no")).iterator()) {
+        Random random = new Random();
+        int minDay = (int) LocalDate.of(2015, 1, 1).toEpochDay();
+        int maxDay = (int) LocalDate.of(2021, 1, 31).toEpochDay();
+
+        //int count=1;
+        Bson match = match(eq("trainer","no"));
+
+        try (MongoCursor<Document> cursor = users.aggregate(Arrays.asList(match)).iterator()) {
             while (cursor.hasNext()) {
+                //System.out.println(count);
                 Document user = cursor.next();
                 String level = user.getString("level");
+
+                long randomDay = minDay + random.nextInt(maxDay - minDay);
+
                 if(level==null)
                     continue;
-                createRoutine(user, level);
-                break;
+                //numero di routine per l'utente in corso (random tra 1 e 4)
+                ThreadLocalRandom tlr = ThreadLocalRandom.current();
+                int routines = tlr.nextInt(1,5);
+
+                while(routines > 0){
+                    createRoutine(user, level, randomDay);
+                    //incremento la data di inizio di un numero casuale tra 30 e 90 giorni
+                    randomDay = LocalDate.ofEpochDay(randomDay).plusDays(random.nextInt(90 - 30)).toEpochDay();
+                    int test = tlr.nextInt(1, 9);
+                    if(test > 6){ // incremento di livello con una probabilità di 2/8
+                        switch (level){
+                            case "Beginner": {
+                                level = "Intermediate";
+                                break;
+                            }
+                            case "Intermediate": {
+                                level = "Expert";
+                                break;
+                            }
+                        }
+                        users.updateOne(
+                                eq("athlete_id", user.getString("athlete_id")),
+                                set("level", level));
+                    }
+                    routines--;
+                }
+                //count++;
             }
         }
+
+
+        //match = match(and(eq("trainer","no"),eq("level","")));
+        //Bson sample = sample(16000);
+        //users.aggregate(Arrays.asList(match)).forEach(
+        //        doc->users.updateOne(doc,set("level","Expert"))
+        //);
+
         myClient.close();
     }*/
 }
