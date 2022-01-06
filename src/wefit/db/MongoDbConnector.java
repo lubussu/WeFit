@@ -1,6 +1,8 @@
 package wefit.db;
 import com.mongodb.ConnectionString;
+import com.mongodb.MongoException;
 import com.mongodb.client.*;
+import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
 
 import java.time.LocalDate;
@@ -50,6 +52,15 @@ public class MongoDbConnector {
             System.out.println("level\t" + doc.getString("level"));
             System.out.println("work\t" + doc.getString("level"));
         };
+    }
+
+    public void signUp(Document user){
+        try {
+            InsertOneResult result = users.insertOne(user);
+            System.out.println("Success! Inserted document id: " + result.getInsertedId());
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
     }
 
     public Document signIn(String username, String password) {
