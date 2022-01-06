@@ -223,7 +223,7 @@ public class WorkoutRoutineCreator {
         }
 
     }
-
+/*
     public static void main(String[] args) {
         uri = new ConnectionString("mongodb://localhost:27017");
         myClient = MongoClients.create(uri);
@@ -309,4 +309,6 @@ public class WorkoutRoutineCreator {
 
         myClient.close();
     }
+
+ */
 }

@@ -37,10 +37,12 @@ public class WeFit {
                 case "1": {
                     mongoDb = new MongoDbConnector("mongodb://localhost:27017","wefit");
                     signIn();
+                    break;
                 }
                 case "2": {
                     mongoDb = new MongoDbConnector("mongodb://localhost:27017","wefit");
                     signUp();
+                    break;
                 }
             }
         }
@@ -103,7 +105,7 @@ public class WeFit {
     }
 
     public static void session(String email){
-        System.out.println("WELCOME " + email);
+        System.out.println("WELCOME " + user.getString("name"));
         boolean running = true;
         while(running) {
             System.out.println("\nWhat do you need?\n" +
@@ -134,7 +136,7 @@ public class WeFit {
                 case "6":
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     running = false;
-                    break;
+                    return;
                 default:
                     System.out.println("Please select an existing option!\n");
                     break;
