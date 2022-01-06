@@ -27,8 +27,7 @@ public class MongoDbConnector {
     static MongoClient myClient;
     static MongoDatabase db;
 
-    static MongoCollection<Document> exercises;
-    static MongoCollection<Document> routines;
+    static MongoCollection<Document> workout;
     static MongoCollection<Document> users;
 
     public MongoDbConnector(String conn, String db_name){
@@ -36,8 +35,7 @@ public class MongoDbConnector {
         myClient = MongoClients.create(uri);
         db = myClient.getDatabase(db_name);
 
-        exercises = db.getCollection("exercises");
-        routines = db.getCollection("routines");
+        workout = db.getCollection("workout");
         users = db.getCollection("users");
     }
 
@@ -62,7 +60,7 @@ public class MongoDbConnector {
         Bson match = match(and(eq("user",user),gt("end_day",c_day)));
         Bson proj = project(fields(excludeId(), exclude("user","warm_up","exercises","stretching")));
 
-        Document r = routines.aggregate(Arrays.asList(match,proj)).first();
+        Document r = workout.aggregate(Arrays.asList(match,proj)).first();
 
         if(r==null)
             System.out.println("you don't have current routines");
@@ -75,7 +73,7 @@ public class MongoDbConnector {
         Bson match = match(and(eq("user",user),lt("end_day",c_day)));
         Bson proj = project(fields(excludeId(), exclude("user","warm_up","exercises","stretching")));
 
-        Document r = routines.aggregate(Arrays.asList(match,proj)).first();
+        Document r = workout.aggregate(Arrays.asList(match,proj)).first();
 
         if(r==null)
             System.out.println("you don't have past routines");

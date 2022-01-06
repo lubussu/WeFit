@@ -23,8 +23,7 @@ public class WorkoutRoutineCreator {
     static MongoClient myClient;
     static MongoDatabase db;
 
-    static MongoCollection<Document> exercises;
-    static MongoCollection<Document> routines;
+    static MongoCollection<Document> workout;
     static MongoCollection<Document> users;
     static ArrayList<String> muscles = new ArrayList<String>();
 
@@ -148,7 +147,7 @@ public class WorkoutRoutineCreator {
                 break;
         }
         sample = sample(3); //scelgo casualmente 3 esercizi tra quelli trovati
-        AggregateIterable<Document> output = exercises.aggregate(Arrays.asList(match,sample));
+        AggregateIterable<Document> output = workout.aggregate(Arrays.asList(match,sample));
         for(Document d: output)
             createEx(d, warm_up, false);
         routine.append("warm_up", warm_up); //aggiungo l'esercizio alla routine (solo alcuni attributi)
@@ -173,7 +172,7 @@ public class WorkoutRoutineCreator {
                     break;
             }
             sample = sample(1);
-            output = exercises.aggregate(Arrays.asList(match,sample));
+            output = workout.aggregate(Arrays.asList(match,sample));
             for(Document d:output)
                 createEx(d, exs, true);
         }
@@ -192,14 +191,14 @@ public class WorkoutRoutineCreator {
                 break;
         }
         sample = sample(3);
-        output = exercises.aggregate(Arrays.asList(match,sample));
+        output = workout.aggregate(Arrays.asList(match,sample));
         for(Document d:output)
             createEx(d, stretch, true);
         routine.append("stretching", stretch);
         routine.append("starting_day", LocalDate.ofEpochDay(start).toString());
         routine.append("end_day", LocalDate.ofEpochDay(start).plusDays(30).toString());
 
-        routines.insertOne(routine);
+        workout.insertOne(routine);
         //System.out.println("----------------------------------------------------------------------");
         //System.out.println(routine.toJson());
     }
@@ -216,7 +215,7 @@ public class WorkoutRoutineCreator {
                 Document com = cursor.next();
                 Bson sample = sample(1);
                 utente = users.aggregate(Arrays.asList(sample)).first().getString("athlete_id");
-                routine = routines.aggregate(Arrays.asList(sample)).first().getObjectId("_id").toString();
+                routine = workout.aggregate(Arrays.asList(sample)).first().getObjectId("_id").toString();
                 comments.updateOne(com, set("user",utente));
                 comments.updateOne(com, set("routine",routine));
                 count++;
@@ -224,37 +223,54 @@ public class WorkoutRoutineCreator {
         }
 
     }
-/*
+
     public static void main(String[] args) {
         uri = new ConnectionString("mongodb://localhost:27017");
         myClient = MongoClients.create(uri);
         db = myClient.getDatabase("wefit");
 
-        exercises = db.getCollection("exercises");
-        routines = db.getCollection("routines");
+        workout = db.getCollection("workout");
         users = db.getCollection("users");
 
         // array con tutti i gruppi muscolaru
         Bson group = group("$muscle_targeted", sum("count", 1));
-        exercises.aggregate(Arrays.asList(group)).forEach(doc -> muscles.add(doc.getString("_id")));
+        workout.aggregate(Arrays.asList(group)).forEach(doc -> muscles.add(doc.getString("_id")));
 
         Random random = new Random();
-        int minDay = (int) LocalDate.of(2015, 1, 1).toEpochDay();
+        int minDay = (int) LocalDate.of(2017, 1, 1).toEpochDay();
         int maxDay = (int) LocalDate.of(2021, 1, 31).toEpochDay();
 
-        //int count=1;
+
         Bson match = match(eq("trainer","no"));
 
+
+        //salvare id di utenti che hanno gia routine per aggiungere solo agli altri
+        group = group("$user", sum("count", 1));
+        ArrayList<String> us = new ArrayList<>();
+        workout.aggregate(Arrays.asList(group)).forEach(
+                doc->
+                        us.add(doc.getString("_id"))
+        );
+
+        //creare routine
         try (MongoCursor<Document> cursor = users.aggregate(Arrays.asList(match)).iterator()) {
+            int count=1;
             while (cursor.hasNext()) {
-                //System.out.println(count);
+                System.out.println(count);
                 Document user = cursor.next();
+
+                //if (us.contains(user.getString("athlete_id"))) {
+                //    count++;
+                //    continue;
+                //}
+
                 String level = user.getString("level");
 
                 long randomDay = minDay + random.nextInt(maxDay - minDay);
 
                 if(level==null)
                     continue;
+
                 //numero di routine per l'utente in corso (random tra 1 e 4)
                 ThreadLocalRandom tlr = ThreadLocalRandom.current();
                 int routines = tlr.nextInt(1,5);
@@ -264,7 +280,7 @@ public class WorkoutRoutineCreator {
                     //incremento la data di inizio di un numero casuale tra 30 e 90 giorni
                     randomDay = LocalDate.ofEpochDay(randomDay).plusDays(random.nextInt(90 - 30)).toEpochDay();
                     int test = tlr.nextInt(1, 9);
-                    if(test > 6){ // incremento di livello con una probabilità di 2/8
+                    if(test > 5){ // incremento di livello con una probabilità di 3/8
                         switch (level){
                             case "Beginner": {
                                 level = "Intermediate";
@@ -281,17 +297,16 @@ public class WorkoutRoutineCreator {
                     }
                     routines--;
                 }
-                //count++;
+                count++;
             }
         }
 
-
         //match = match(and(eq("trainer","no"),eq("level","")));
-        //Bson sample = sample(16000);
-        //users.aggregate(Arrays.asList(match)).forEach(
+        //Bson sample = sample(12000);
+        //users.aggregate(Arrays.asList(match, sample)).forEach(
         //        doc->users.updateOne(doc,set("level","Expert"))
         //);
 
         myClient.close();
-    }*/
+    }
 }

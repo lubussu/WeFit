@@ -77,10 +77,10 @@ public class WeFit {
             String input = sc.next();
             switch (input) {
                 case "1":
-                    mongoDb.showCurrentRoutine(user.getString("athlete_id"));
+                    mongoDb.showCurrentRoutine(user.getString("user_id"));
                     break;
                 case "2":
-                    mongoDb.showPastRoutine(user.getString("athlete_id"));
+                    mongoDb.showPastRoutine(user.getString("user_id"));
                     break;
                 case "3":
                     System.out.println("There are no people your are following...\n");
