@@ -98,13 +98,16 @@ public class WeFit {
         /*query neo4j database*/
 
         if (user != null) {
-            session(email);
+            if(user.getString("trainer").equals("no"))
+                session();
+            else
+                sessionTrainer();
         }else{
             System.out.println("Incorrect email or password, please retry!");
         }
     }
 
-    public static void session(String email){
+    public static void session(){
         System.out.println("WELCOME " + user.getString("name"));
         boolean running = true;
         while(running) {
@@ -131,9 +134,43 @@ public class WeFit {
                     System.out.println("You have not yet commented any routine...\n");
                     break;
                 case "5":
+                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     user = null;
                     return;
                 case "6":
+                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
+                    running = false;
+                    return;
+                default:
+                    System.out.println("Please select an existing option!\n");
+                    break;
+            }
+        }
+    }
+    public static void sessionTrainer(){
+        System.out.println("WELCOME " + user.getString("name"));
+        boolean running = true;
+        while(running) {
+            System.out.println("\nWhat do you need?\n" +
+                    "1) See your routines\n" +
+                    "2) Add a new routine\n" +
+                    "3) Add a new exercise\n" +
+                    "4) Log out\n" +
+                    "5) Exit the app\n");
+            Scanner sc = new Scanner(System.in);
+            String input = sc.next();
+            switch (input) {
+                case "1":
+                    break;
+                case "2":
+                    break;
+                case "3":
+                    break;
+                case "4":
+                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
+                    user = null;
+                    return;
+                case "5":
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     running = false;
                     return;
