@@ -87,13 +87,15 @@ public class WeFit {
     }
 
     public static void signIn() {
-        String email, password;
+        String email, password;/*
         System.out.println("Please insert your email...");
         Scanner sc = new Scanner(System.in);
         email = sc.next();
         System.out.println("now insert your password...");
         password = sc.next();
-        System.out.println(email + " " + password);
+        System.out.println(email + " " + password);*/
+        email = "Judith_Eyres718285046@liret.org";
+        password = "3eYZcK8f";
         user = mongoDb.signIn(email, password);
         /*query neo4j database*/
 
