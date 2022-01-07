@@ -53,8 +53,10 @@ public class WeFit {
         String name, gender, yob, height, weight, training, bg, exp, email, password;
         Scanner sc = new Scanner(System.in);
         System.out.println("Your are signing-up as a new user, please insert your credentials\n" +
-                "Insert your name and surname...\n");
+                "Insert your name...\n");
         name = sc.next();
+        System.out.println("...and your surname");
+        name = " " + sc.next();
         System.out.println("Insert your gender...\n");
         gender = sc.next();
         System.out.println("Insert your year of birth...\n");
@@ -98,16 +100,13 @@ public class WeFit {
         /*query neo4j database*/
 
         if (user != null) {
-            if(user.getString("trainer").equals("no"))
-                session();
-            else
-                sessionTrainer();
+            session(email);
         }else{
             System.out.println("Incorrect email or password, please retry!");
         }
     }
 
-    public static void session(){
+    public static void session(String email){
         System.out.println("WELCOME " + user.getString("name"));
         boolean running = true;
         while(running) {
@@ -116,8 +115,8 @@ public class WeFit {
                     "2) See your past routines\n" +
                     "3) See your followed list\n" +
                     "4) See routines you commented\n" +
-                    "5) Log out\n" +
-                    "6) Exit the app");
+                    "5) Modify your profile\n" +
+                    "6) Log out\n");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -134,12 +133,10 @@ public class WeFit {
                     System.out.println("You have not yet commented any routine...\n");
                     break;
                 case "5":
-                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
-                    user = null;
-                    return;
+                    changeProfile();
+                    break;
                 case "6":
-                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
-                    running = false;
+                    user = null;
                     return;
                 default:
                     System.out.println("Please select an existing option!\n");
@@ -147,36 +144,91 @@ public class WeFit {
             }
         }
     }
-    public static void sessionTrainer(){
-        System.out.println("WELCOME " + user.getString("name"));
-        boolean running = true;
-        while(running) {
-            System.out.println("\nWhat do you need?\n" +
-                    "1) See your routines\n" +
-                    "2) Add a new routine\n" +
-                    "3) Add a new exercise\n" +
-                    "4) Log out\n" +
-                    "5) Exit the app\n");
-            Scanner sc = new Scanner(System.in);
-            String input = sc.next();
+
+    public  static void changeProfile(){
+        System.out.println("1) Name: " + user.getString("name"));
+        System.out.println("2) Gender: " + user.getString("gender"));
+        System.out.println("3) Year of birth: " + user.getString("year_of_birth"));
+        System.out.println("4) Height: " + user.getString("height"));
+        System.out.println("5) Weight: " + user.getString("weight"));
+        System.out.println("6) Training: " + user.getString("train"));
+        System.out.println("7) Background: " + user.getString("background"));
+        System.out.println("8) Experience: " + user.getString("experience"));
+        System.out.println("9) Email: " + user.getString("email"));
+        System.out.println("10) Password: " + user.getString("password"));
+        System.out.println("0) Save your changes");
+        System.out.println("Select an option to change...");
+        Scanner sc = new Scanner(System.in);
+        String input;
+        while(true) {
+            input = sc.next();
             switch (input) {
-                case "1":
+                case "1": {
+                    System.out.println("Insert your name...");
+                    input = sc.next();
+                    System.out.println("...and your surname");
+                    input += " " + sc.next();
+                    user.append("name", input);
+                    System.out.println(user.getString("name"));
                     break;
-                case "2":
+                }
+                case "2": {
+                    System.out.println("Insert your gender...");
+                    input = sc.next();
+                    user.append("gender", input);
                     break;
-                case "3":
+                }
+                case "3": {
+                    System.out.println("Insert your year of birth...");
+                    input = sc.next();
+                    user.append("year_of_birth", input);
                     break;
-                case "4":
-                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
-                    user = null;
+                }
+                case "4": {
+                    System.out.println("Insert your height...");
+                    input = sc.next();
+                    user.append("height", input);
+                    break;
+                }
+                case "5": {
+                    System.out.println("Insert your weight...");
+                    input = sc.next();
+                    user.append("weight", input);
+                    break;
+                }
+                case "6": {
+                    System.out.println("Insert your training...");
+                    input = sc.next();
+                    user.append("train", input);
+                    break;
+                }
+                case "7": {
+                    System.out.println("Insert your training background...");
+                    input = sc.next();
+                    user.append("background", input);
+                    break;
+                }
+                case "8": {
+                    System.out.println("Insert your experience...");
+                    input = sc.next();
+                    user.append("experience", input);
+                    break;
+                }
+                case "9": {
+                    System.out.println("Insert your new email...");
+                    input = sc.next();
+                    user.append("email", input);
+                    break;
+                }
+                case "10": {
+                    System.out.println("Insert your new password...");
+                    input = sc.next();
+                    user.append("password", input);
+                    break;
+                }
+                case "0":
+                    mongoDb.changeProfile(user);
                     return;
-                case "5":
-                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
-                    running = false;
-                    return;
-                default:
-                    System.out.println("Please select an existing option!\n");
-                    break;
             }
         }
     }

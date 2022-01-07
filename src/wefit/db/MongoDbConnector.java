@@ -2,6 +2,7 @@ package wefit.db;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoException;
 import com.mongodb.client.*;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
 
@@ -64,6 +65,20 @@ public class MongoDbConnector {
     public Document signIn(String username, String password) {
         Document doc = users.find(and(eq("email",username),eq("password",password))).first();
         return doc;
+    }
+
+    public void changeProfile(Document user){
+        try {
+            DeleteResult result = users.deleteOne(eq("athlete_id", user.getString("athlete_id")));
+        } catch (MongoException me) {
+            System.err.println("Unable to delete due to an error: " + me);
+        }
+        try {
+            InsertOneResult result = users.insertOne(user);
+            System.out.println("Success! Your profile has been updated.");
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
     }
 
     public void showCurrentRoutine(String user){
