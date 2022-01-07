@@ -21,8 +21,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import static com.mongodb.client.model.Projections.*;
-
-
+import java.io.*;
 
 import javax.print.Doc;
 
@@ -43,25 +42,30 @@ public class MongoDbConnector {
         users = db.getCollection("users");
     }
 
-    private Consumer<Document> printDocuments() {
-        return doc -> System.out.println(doc.toJson());
-    }
-    private Consumer<Document> printRoutine() {
-        return doc -> {
-            System.out.print("trainer: " + doc.getString("trainer")+"\t");
-            System.out.print("level: " + doc.getString("level")+"\n");
-            System.out.print("starting_day: " + doc.getString("starting_day")+"\t");
-            System.out.print("end_day: " + doc.getString("end_day")+"\n");
-            System.out.println("___________________________________________________________________________");
-        };
-    }
     private void printRoutine(Document doc) {
-        System.out.print("trainer: " + doc.getString("trainer")+"\t");
-        System.out.print("level: " + doc.getString("level")+"\t");
-        System.out.print("work: " + doc.getString("level")+"\t");
-        System.out.print("starting_day: " + doc.getString("starting_day")+"\n");
+        System.out.print("trainer: " + doc.getString("trainer")+"\t\t");
+        System.out.print("level: " + doc.getString("level")+"\n");
+        System.out.print("starting_day: " + doc.getString("starting_day")+"\t");
         System.out.print("end_day: " + doc.getString("end_day")+"\n");
         System.out.println("___________________________________________________________________________");
+    }
+
+    public void printEx(Document doc, String type){
+        System.out.printf("%40s %20s %15s %15s %10s", "Name", "Muscle Targeted", "Equipment", "Type", "Weight\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+        for(Document d: (ArrayList<Document>)doc.get(type)) {
+            System.out.printf("%40s %20s %15s %15s %10d", d.getString("name"),d.getString("muscle_targeted"),
+                    d.getString("equipment"),d.getString("type"),d.getInteger("weight"));
+            System.out.println();
+            /*
+            System.out.print("name: " + d.getString("name")+"\t\t");
+            System.out.print("muscle_targeted: " + d.getString("muscle_targeted")+"\t\t");
+            System.out.print("equipment: " + d.getString("equipment")+"\t\t");
+            System.out.print("type: " + d.getString("type\t\t"));
+            if(d.getInteger("weight")!=null)
+                System.out.printf("%5s", "Weight");
+            System.out.print("\n");*/
+        }
     }
 
     public void signUp(Document user){
@@ -72,7 +76,6 @@ public class MongoDbConnector {
             System.err.println("Unable to insert due to an error: " + me);
         }
     }
-
     public Document signIn(String username, String password) {
         Document doc = users.find(and(eq("email",username),eq("password",password))).first();
         return doc;
@@ -159,50 +162,68 @@ public class MongoDbConnector {
             }
         }
     }
-
     public void showDetails(String id){
         Bson match = match(eq("_id",new ObjectId(id)));
         Bson proj = project(fields(excludeId(), exclude("user","comments")));
         Document doc = workout.aggregate(Arrays.asList(match,proj)).first();
 
-        System.out.print("ROUTINE DETAILS\n\n");
+        while(true){
+            System.out.println("--------------------------------------------------------------------------------------------------------");
+            System.out.println("ROUTINE DETAILS");
+            System.out.println("--------------------------------------------------------------------------------------------------------");
 
-        System.out.print("trainer: " + doc.getString("trainer")+"\t");
+            System.out.print("trainer: " + doc.getString("trainer")+"\t");
+            System.out.print("level: " + doc.getString("level")+"\n");
+            System.out.print("starting_day: " + doc.getString("starting_day")+"\t");
+            System.out.print("end_day: " + doc.getString("end_day")+"\n");
+            System.out.print("work_time(sec): " + doc.getInteger("work_time(sec)")+"\t");
+            System.out.print("rest_time(sec): " + doc.getInteger("rest_time(sec)")+"\n\n");
+
+            System.out.print("WARM UP:\n");
+            printEx(doc, "warm_up");
+            System.out.println();
+
+            System.out.print("EXERCISES:\tRepeat the sequence "+doc.getInteger("repeat")+" times\n");
+            printEx(doc, "exercises");
+            System.out.println();
+
+            System.out.print("STRETCHING:\n");
+            printEx(doc, "stretching");
+
+            System.out.println("\nPress 1 to search an exercise\nOr any other key to return");
+            Scanner sc = new Scanner(System.in);
+            String input = sc.next();
+            switch (input) {
+                case "1": {
+                    System.out.println("Insert the exercise name");
+                    BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+                    String exercise="";
+                    try {
+                        exercise = bufferRead.readLine();
+                    } catch (IOException e) { e.printStackTrace();}
+                    showExercise(exercise);
+                    continue;
+                }
+                default: return;
+            }
+        }
+
+    }
+    public void showExercise(String ex){
+        Document doc = workout.find(and(eq("name",ex),ne("type",null))).first();
+        System.out.print("Exercise:\t"+ex+"\n");
+        System.out.print("type: " + doc.getString("type")+"\t");
         System.out.print("level: " + doc.getString("level")+"\n");
-        System.out.print("starting_day: " + doc.getString("starting_day")+"\t");
-        System.out.print("end_day: " + doc.getString("end_day")+"\n");
-        System.out.print("work_time(sec): " + doc.getInteger("work_time(sec)")+"\t");
-        System.out.print("rest_time(sec): " + doc.getInteger("rest_time(sec)")+"\n\n");
-
-
-        System.out.print("WARM UP:\n");
-        for(Document d: (ArrayList<Document>)doc.get("warm_up")) {
-            System.out.print("name: " + d.getString("name")+"\t");
-            System.out.print("muscle_targeted: " + d.getString("muscle_targeted")+"\t");
-            System.out.print("equipment: " + d.getString("equipment")+"\t");
-            System.out.print("type: " + d.getString("type")+"\n");
+        System.out.print("muscle_targeted: " + doc.getString("muscle_targeted")+"\t");
+        System.out.print("equipment: " + doc.getString("equipment")+"\n");
+        System.out.print("images:\n");
+        for(Document d: (ArrayList<Document>)doc.get("images")) {
+            System.out.print(d.getString("image")+"\n");
         }
-        System.out.println();
-        System.out.print("EXERCISES:\tRepeat the sequence "+doc.getInteger("repeat")+" times\n");
-        for(Document d: (ArrayList<Document>)doc.get("exercises")) {
-            System.out.print("name: " + d.getString("name")+"\t");
-            System.out.print("muscle_targeted: " + d.getString("muscle_targeted")+"\t");
-            System.out.print("equipment: " + d.getString("equipment")+"\t");
-            System.out.print("type: " + d.getString("type")+"\t");
-            if(d.getInteger("weight")!=null)
-                System.out.print("weight: " + d.getInteger("weight"));
-            System.out.print("\n");
-        }
-        System.out.println();
-        System.out.print("STRETCHING:\n");
-        for(Document d: (ArrayList<Document>)doc.get("stretching")) {
-            System.out.print("name: " + d.getString("name")+"\t");
-            System.out.print("muscle_targeted: " + d.getString("muscle_targeted")+"\t");
-            System.out.print("equipment: " + d.getString("equipment")+"\t");
-            System.out.print("type: " + d.getString("type")+"\n");
-        }
+        if(doc.getString("details")!=null)
+            System.out.print("details:\n" + doc.getString("details")+"\n");
 
-        System.out.println("\nPress any key to return to the main menu");
+        System.out.println("Press any key to return");
         Scanner sc = new Scanner(System.in);
         String input = sc.next();
     }
