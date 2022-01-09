@@ -95,6 +95,24 @@ public class MongoDbConnector {
         }
     }
 
+    public Document searchUser(String name){
+        Bson name_condition = new Document("$eq", name);
+        Bson name_filter = new Document("name", name_condition);
+        Document user = new Document();
+        String id;
+        for(Document document :  users.find(name_filter)){
+            System.out.println(document.getString("athlete_id"));
+        }
+        Scanner sc = new Scanner(System.in);
+        id = sc.next();
+        Bson id_condition = new Document("$eq", id);
+        Bson id_filter = new Document("athlete_id", id_condition);
+        for(Document document :  users.find(id_filter)){
+            user = document;
+        }
+        return user;
+    }
+
     public void showCurrentRoutine(String user){
         String c_day = LocalDate.now().toString();
         Bson match = match(and(eq("user",user),gt("end_day",c_day)));
