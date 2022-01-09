@@ -68,6 +68,15 @@ public class MongoDbConnector {
         }
     }
 
+    public void insertRoutine(Document routine){
+        try {
+            InsertOneResult result = workout.insertOne(routine);
+            System.out.println("Success! Your routine has been inserted.");
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
+    }
+
     public void signUp(Document user){
         try {
             InsertOneResult result = users.insertOne(user);
