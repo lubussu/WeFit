@@ -68,15 +68,6 @@ public class MongoDbConnector {
         }
     }
 
-    public void insertRoutine(Document routine){
-        try {
-            InsertOneResult result = workout.insertOne(routine);
-            System.out.println("Success! Your routine has been inserted.");
-        } catch (MongoException me) {
-            System.err.println("Unable to insert due to an error: " + me);
-        }
-    }
-
     public void signUp(Document user){
         try {
             InsertOneResult result = users.insertOne(user);
@@ -85,9 +76,19 @@ public class MongoDbConnector {
             System.err.println("Unable to insert due to an error: " + me);
         }
     }
+
     public Document signIn(String username, String password) {
         Document doc = users.find(and(eq("email",username),eq("password",password))).first();
         return doc;
+    }
+
+    public void insertRoutine(Document routine){
+        try {
+            InsertOneResult result = workout.insertOne(routine);
+            System.out.println("Success! Your routine has been inserted.");
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
     }
 
     public void changeProfile(Document user){
@@ -151,7 +152,8 @@ public class MongoDbConnector {
         }
 
     }
-    public void showPastRoutine(String user){
+
+    public void showPastRoutines(String user){
         String c_day = LocalDate.now().toString();
         Bson match = match(and(eq("user",user),lt("end_day",c_day)));
         Bson proj = project(exclude("user","warm_up","exercises","stretching"));
@@ -189,6 +191,7 @@ public class MongoDbConnector {
             }
         }
     }
+
     public void showDetails(String id){
         Bson match = match(eq("_id",new ObjectId(id)));
         Bson proj = project(fields(excludeId(), exclude("user","comments")));
@@ -236,6 +239,7 @@ public class MongoDbConnector {
         }
 
     }
+
     public void showExercise(String ex){
         Document doc = workout.find(and(eq("name",ex),ne("type",null))).first();
         System.out.print("Exercise:\t"+ex+"\n");

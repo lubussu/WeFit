@@ -100,15 +100,17 @@ public class WeFit {
         email = "Judith_Eyres718285046@liret.org";
         password = "3eYZcK8f";
         user = mongoDb.signIn(email, password);
-        /*query neo4j database*/
-        if (user != null) {
-            session(email);
-        }else{
+
+        if (user != null && user.getString("trainer").equals("no"))
+            session();
+        else if(user.getString("trainer").equals("yes"))
+            sessionTrainer();
+        else{
             System.out.println("Incorrect email or password, please retry!");
         }
     }
 
-    public static void session(String email){
+    public static void session(){
         System.out.println("WELCOME " + user.getString("name"));
         boolean running = true;
         while(running) {
@@ -117,8 +119,9 @@ public class WeFit {
                     "2) See your past routines\n" +
                     "3) See your followed list\n" +
                     "4) See routines you commented\n" +
-                    "5) Modify your profile\n" +
-                    "6) Log out\n");
+                    "5) Find a routine by parameter\n" +
+                    "6) Modify your profile\n" +
+                    "7) Log out\n");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -126,7 +129,7 @@ public class WeFit {
                     mongoDb.showCurrentRoutine(user.getString("user_id"));
                     break;
                 case "2":
-                    mongoDb.showPastRoutine(user.getString("user_id"));
+                    mongoDb.showPastRoutines(user.getString("user_id"));
                     break;
                 case "3":
                     System.out.println("There are no people your are following...\n");
@@ -135,9 +138,12 @@ public class WeFit {
                     System.out.println("You have not yet commented any routine...\n");
                     break;
                 case "5":
-                    changeProfile();
+
                     break;
                 case "6":
+                    changeProfile();
+                    break;
+                case "7":
                     user = null;
                     return;
                 default:
@@ -146,7 +152,39 @@ public class WeFit {
             }
         }
     }
-
+    public static void sessionTrainer(){
+        System.out.println("WELCOME " + user.getString("name"));
+        boolean running = true;
+        while(running) {
+            System.out.println("\nWhat do you need?\n" +
+                    "1) See your routines\n" +
+                    "2) Add a new routine\n" +
+                    "3) Add a new exercise\n" +
+                    "4) Log out\n" +
+                    "5) Exit the app\n");
+            Scanner sc = new Scanner(System.in);
+            String input = sc.next();
+            switch (input) {
+                case "1":
+                    break;
+                case "2":
+                    break;
+                case "3":
+                    break;
+                case "4":
+                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
+                    user = null;
+                    return;
+                case "5":
+                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
+                    running = false;
+                    return;
+                default:
+                    System.out.println("Please select an existing option!\n");
+                    break;
+            }
+        }
+    }
     public  static void changeProfile(){
         System.out.println("1) Name: " + user.getString("name"));
         System.out.println("2) Gender: " + user.getString("gender"));
@@ -234,6 +272,7 @@ public class WeFit {
             }
         }
     }
+
     public static void addPerson(String name)
     {
         Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );

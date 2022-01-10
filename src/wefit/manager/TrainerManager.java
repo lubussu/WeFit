@@ -1,4 +1,4 @@
-package wefit;
+package wefit.manager;
 
 import org.bson.Document;
 import wefit.db.MongoDbConnector;
@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Scanner;
 
-public class Trainer {
+public class TrainerManager {
 
-    static Document self;
-    static String[] Muscles = {"Shoulders", "Traps", "Biceps", "Neck", "Lower Back", "Adductors", "Forearms", "Hamstrings", "Lats", "Middle Back", "Glutes", "Chest", "Abdominals", "Quadriceps", "Abductors", "Calves", "Triceps"};
-    static MongoDbConnector mongoDb;
+    private Document self;
+    private String[] Muscles = {"Shoulders", "Traps", "Biceps", "Neck", "Lower Back", "Adductors", "Forearms", "Hamstrings", "Lats", "Middle Back", "Glutes", "Chest", "Abdominals", "Quadriceps", "Abductors", "Calves", "Triceps"};
+    private MongoDbConnector mongoDb;
 
-    public Trainer(Document trainer, MongoDbConnector mongo){
+    public TrainerManager(Document trainer, MongoDbConnector mongo){
         this.self = trainer;
         this.mongoDb = mongo;
     }
@@ -91,8 +91,8 @@ public class Trainer {
         new_routine.append("rest_time(sec)", fecth);
         new_routine.append("starting_day", LocalDate.now().toString());
         new_routine.append("stretching", stretching);
-        new_routine.append("trainer", self.getString("athlete_id"));
-        new_routine.append("user", user.getString("athlete_id"));
+        new_routine.append("trainer", self.getString("user_id"));
+        new_routine.append("user", user.getString("user_id"));
         new_routine.append("warm_up", warmup);
         System.out.println("Insert the repetition time...");
         fecth = sc.next();
