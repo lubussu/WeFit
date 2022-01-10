@@ -84,69 +84,89 @@ public class UserManager {
         Scanner sc = new Scanner(System.in);
         String input;
         while(true) {
+            BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
             input = sc.next();
             switch (input) {
                 case "1": {
-                    System.out.println("Insert your name...");
-                    input = sc.next();
-                    System.out.println("...and your surname");
-                    input += " " + sc.next();
+                    System.out.println("Insert your full name...");
+                    try {
+                        input = bufferRead.readLine();
+                    } catch (IOException e) {e.printStackTrace();}
+
+                    //System.out.println("...and your surname");
+                    //input += " " + sc.next();
                     self.append("name", input);
-                    System.out.println(self.getString("name"));
+                    //System.out.println(self.getString("name"));
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "2": {
                     System.out.println("Insert your gender...");
                     input = sc.next();
                     self.append("gender", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "3": {
                     System.out.println("Insert your year of birth...");
                     input = sc.next();
                     self.append("year_of_birth", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "4": {
                     System.out.println("Insert your height...");
                     input = sc.next();
                     self.append("height", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "5": {
                     System.out.println("Insert your weight...");
                     input = sc.next();
                     self.append("weight", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "6": {
                     System.out.println("Insert your training...");
-                    input = sc.next();
+                    try {
+                        input = bufferRead.readLine();
+                    } catch (IOException e) {e.printStackTrace();}
                     self.append("train", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "7": {
                     System.out.println("Insert your training background...");
-                    input = sc.next();
+                    try {
+                        input = bufferRead.readLine();
+                    } catch (IOException e) {e.printStackTrace();}
                     self.append("background", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "8": {
                     System.out.println("Insert your experience...");
-                    input = sc.next();
+                    try {
+                        input = bufferRead.readLine();
+                    } catch (IOException e) {e.printStackTrace();}
                     self.append("experience", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "9": {
                     System.out.println("Insert your new email...");
                     input = sc.next();
                     self.append("email", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "10": {
                     System.out.println("Insert your new password...");
                     input = sc.next();
                     self.append("password", input);
+                    System.out.println("\nSelect another option or press 0 to save your changes");
                     break;
                 }
                 case "0":
