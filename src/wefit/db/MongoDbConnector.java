@@ -83,7 +83,7 @@ public class MongoDbConnector {
 
     public void changeProfile(Document user){
         try {
-            DeleteResult result = users.deleteOne(eq("athlete_id", user.getString("athlete_id")));
+            DeleteResult result = users.deleteOne(eq("user_id", user.getString("user_id")));
         } catch (MongoException me) {
             System.err.println("Unable to delete due to an error: " + me);
         }

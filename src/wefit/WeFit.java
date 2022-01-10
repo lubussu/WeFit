@@ -44,6 +44,8 @@ public class WeFit {
                     signUp();
                     break;
                 }
+                default:
+                    System.out.println("Please select an existing option!\n");
             }
         }
 
