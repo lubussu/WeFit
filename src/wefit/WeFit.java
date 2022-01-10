@@ -48,7 +48,6 @@ public class WeFit {
                     System.out.println("Please select an existing option!\n");
             }
         }
-
     }
 
     public static void signUp(){
@@ -102,7 +101,6 @@ public class WeFit {
         password = "3eYZcK8f";
         user = mongoDb.signIn(email, password);
         /*query neo4j database*/
-
         if (user != null) {
             session(email);
         }else{

@@ -68,6 +68,15 @@ public class MongoDbConnector {
         }
     }
 
+    public void insertRoutine(Document routine){
+        try {
+            InsertOneResult result = workout.insertOne(routine);
+            System.out.println("Success! Your routine has been inserted.");
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
+    }
+
     public void signUp(Document user){
         try {
             InsertOneResult result = users.insertOne(user);
@@ -93,6 +102,24 @@ public class MongoDbConnector {
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
         }
+    }
+
+    public Document searchUser(String name){
+        Bson name_condition = new Document("$eq", name);
+        Bson name_filter = new Document("name", name_condition);
+        Document user = new Document();
+        String id;
+        for(Document document :  users.find(name_filter)){
+            System.out.println(document.getString("athlete_id"));
+        }
+        Scanner sc = new Scanner(System.in);
+        id = sc.next();
+        Bson id_condition = new Document("$eq", id);
+        Bson id_filter = new Document("athlete_id", id_condition);
+        for(Document document :  users.find(id_filter)){
+            user = document;
+        }
+        return user;
     }
 
     public void showCurrentRoutine(String user){
