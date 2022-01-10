@@ -110,17 +110,35 @@ public class MongoDbConnector {
         Bson name_filter = new Document("name", name_condition);
         Document user = new Document();
         String id;
+        ArrayList<Document> docs = new ArrayList<>();
+        users.find(name_filter).into(docs);
+        if(docs.size()==1)
+            return docs.get(0);
         for(Document document :  users.find(name_filter)){
-            System.out.println(document.getString("athlete_id"));
+            System.out.println(document.getString("user_id"));
         }
         Scanner sc = new Scanner(System.in);
         id = sc.next();
         Bson id_condition = new Document("$eq", id);
-        Bson id_filter = new Document("athlete_id", id_condition);
+        Bson id_filter = new Document("user_id", id_condition);
         for(Document document :  users.find(id_filter)){
             user = document;
         }
         return user;
+    }
+
+    public void searchRoutines(List<Bson> filters){
+        ArrayList<Document> docs = new ArrayList<>();
+        workout.aggregate(filters).into(docs);
+        if(docs.size()==0)
+            System.out.println("Results not found");
+        else {
+            for (int i = 0; i < docs.size(); i++) {
+                System.out.print((i + 1) + ") ");
+                printRoutine(docs.get(i));
+            }
+            selectRoutine(docs);
+        }
     }
 
     public void showCurrentRoutine(String user){
@@ -167,28 +185,30 @@ public class MongoDbConnector {
                 System.out.print((i + 1) + ") ");
                 printRoutine(docs.get(i));
             }
+            selectRoutine(docs);
+        }
+    }
+    public void selectRoutine(ArrayList<Document> docs){
+        String input;
+        while (true) {
+            System.out.println("Press the number of the routine you want to select\n" +
+                    "or press 0 to return to the main menu");
 
-            String input;
-            while (true) {
-                System.out.println("Press the number of the routine you want to select\n" +
-                        "or press 0 to return to the main menu");
-
-                Scanner sc = new Scanner(System.in);
-                input = sc.next();
-                if (!input.matches("[0-9.]+"))
-                    System.out.println("Please select an existing option!");
-                else if ((Integer.parseInt(input)) > docs.size())
-                    System.out.println("Please select an existing option!");
-                else
-                    break;
-            }
-            switch (input) {
-                case "0":
-                    return;
-                default:
-                    String id = docs.get(Integer.parseInt(input)-1).getObjectId("_id").toString();
-                    showDetails(id);
-            }
+            Scanner sc = new Scanner(System.in);
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > docs.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return;
+            default:
+                String id = docs.get(Integer.parseInt(input)-1).getObjectId("_id").toString();
+                showDetails(id);
         }
     }
 
@@ -220,7 +240,10 @@ public class MongoDbConnector {
             System.out.print("STRETCHING:\n");
             printEx(doc, "stretching");
 
-            System.out.println("\nPress 1 to search an exercise\nOr any other key to return");
+            System.out.println("\nPress 1 to search an exercise\n"+
+                                "Press 2 to comment the routine\n"+
+                                "Press 3 to vote the routine\n"+
+                                "Or press another key to return");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -234,6 +257,12 @@ public class MongoDbConnector {
                     showExercise(exercise);
                     continue;
                 }
+                case "2":
+                    //comment();
+                    break;
+                case "3":
+                    //vote();
+                    break;
                 default: return;
             }
         }
