@@ -42,55 +42,6 @@ public class MongoDbConnector {
         users = db.getCollection("users");
     }
 
-    private void printRoutine(Document doc) {
-        System.out.print("trainer: " + doc.getString("trainer")+"\t\t");
-        System.out.print("level: " + doc.getString("level")+"\n");
-        System.out.print("starting_day: " + doc.getString("starting_day")+"\t");
-        System.out.print("end_day: " + doc.getString("end_day")+"\n");
-        System.out.println("___________________________________________________________________________");
-    }
-
-    public void printEx(Document doc, String type){
-        System.out.printf("%40s %20s %15s %15s %10s", "Name", "Muscle Targeted", "Equipment", "Type", "Weight\n");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
-        for(Document d: (ArrayList<Document>)doc.get(type)) {
-            System.out.printf("%40s %20s %15s %15s %10d", d.getString("name"),d.getString("muscle_targeted"),
-                    d.getString("equipment"),d.getString("type"),d.getInteger("weight"));
-            System.out.println();
-            /*
-            System.out.print("name: " + d.getString("name")+"\t\t");
-            System.out.print("muscle_targeted: " + d.getString("muscle_targeted")+"\t\t");
-            System.out.print("equipment: " + d.getString("equipment")+"\t\t");
-            System.out.print("type: " + d.getString("type\t\t"));
-            if(d.getInteger("weight")!=null)
-                System.out.printf("%5s", "Weight");
-            System.out.print("\n");*/
-        }
-    }
-
-    public void signUp(Document user){
-        try {
-            InsertOneResult result = users.insertOne(user);
-            System.out.println("Success! Inserted document id: " + result.getInsertedId());
-        } catch (MongoException me) {
-            System.err.println("Unable to insert due to an error: " + me);
-        }
-    }
-
-    public Document signIn(String username, String password) {
-        Document doc = users.find(and(eq("email",username),eq("password",password))).first();
-        return doc;
-    }
-
-    public void insertRoutine(Document routine){
-        try {
-            InsertOneResult result = workout.insertOne(routine);
-            System.out.println("Success! Your routine has been inserted.");
-        } catch (MongoException me) {
-            System.err.println("Unable to insert due to an error: " + me);
-        }
-    }
-
     public void changeProfile(Document user){
         try {
             DeleteResult result = users.deleteOne(eq("user_id", user.getString("user_id")));
@@ -102,6 +53,51 @@ public class MongoDbConnector {
             System.out.println("Success! Your profile has been updated.");
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
+        }
+    }
+
+    public void insertRoutine(Document routine){
+        try {
+            InsertOneResult result = workout.insertOne(routine);
+            System.out.println("Success! Your routine has been inserted.");
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
+    }
+
+    public void printEx(Document doc, String type){
+        System.out.printf("%40s %20s %15s %15s %10s", "Name", "Muscle Targeted", "Equipment", "Type", "Weight\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+        for(Document d: (ArrayList<Document>)doc.get(type)) {
+            System.out.printf("%40s %20s %15s %15s %10d", d.getString("name"),d.getString("muscle_targeted"),
+                    d.getString("equipment"),d.getString("type"),d.getInteger("weight"));
+            System.out.println();
+        }
+    }
+
+    private void printRoutines(ArrayList<Document> docs) {
+        System.out.printf("%3s %10s %15s %15s %15s", "   ", "Trainer", "Level", "Starting day", "End day\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+        for(int i=0; i<docs.size(); i++) {
+            Document d = docs.get(i);
+            System.out.printf("%3s %10s %15s %15s %15s", (i+1)+") ", d.getString("trainer"),d.getString("level"),
+                    d.getString("starting_day"),d.getString("end_day"));
+            System.out.println("\n");
+        }
+    }
+
+    public void searchRoutines(List<Bson> filters){
+        ArrayList<Document> docs = new ArrayList<>();
+        workout.aggregate(filters).into(docs);
+        if(docs.size()==0)
+            System.out.println("Results not found");
+        else {
+            printRoutines(docs);/*
+            for (int i = 0; i < docs.size(); i++) {
+                System.out.print((i + 1) + ") ");
+                printRoutine(docs.get(i));
+            }*/
+            selectRoutine(docs);
         }
     }
 
@@ -127,67 +123,6 @@ public class MongoDbConnector {
         return user;
     }
 
-    public void searchRoutines(List<Bson> filters){
-        ArrayList<Document> docs = new ArrayList<>();
-        workout.aggregate(filters).into(docs);
-        if(docs.size()==0)
-            System.out.println("Results not found");
-        else {
-            for (int i = 0; i < docs.size(); i++) {
-                System.out.print((i + 1) + ") ");
-                printRoutine(docs.get(i));
-            }
-            selectRoutine(docs);
-        }
-    }
-
-    public void showCurrentRoutine(String user){
-        String c_day = LocalDate.now().toString();
-        Bson match = match(and(eq("user",user),gt("end_day",c_day)));
-        Bson proj = project(fields(exclude("user","warm_up","exercises","stretching")));
-
-        Document r = workout.aggregate(Arrays.asList(match,proj)).first();
-
-        if(r==null)
-            System.out.println("you don't have current routines");
-        else {
-            printRoutine(r);
-            //vedi dettagli
-
-            System.out.println("Press 0 to select the routine\n" +
-                    "or press any key to return to the main menu");
-
-            Scanner sc = new Scanner(System.in);
-            String input = sc.next();
-            switch (input) {
-                case "0":
-                    String id = r.getObjectId("_id").toString();
-                    showDetails(id);
-                    return;
-                default:
-                    return;
-            }
-        }
-
-    }
-
-    public void showPastRoutines(String user){
-        String c_day = LocalDate.now().toString();
-        Bson match = match(and(eq("user",user),lt("end_day",c_day)));
-        Bson proj = project(exclude("user","warm_up","exercises","stretching"));
-
-        ArrayList<Document> docs = new ArrayList<>();
-        workout.aggregate(Arrays.asList(match,proj)).into(docs);
-        if(docs.size()==0)
-            System.out.println("you don't have past routines");
-        else {
-            for (int i = 0; i < docs.size(); i++) {
-                System.out.print((i + 1) + ") ");
-                printRoutine(docs.get(i));
-            }
-            selectRoutine(docs);
-        }
-    }
     public void selectRoutine(ArrayList<Document> docs){
         String input;
         while (true) {
@@ -208,11 +143,95 @@ public class MongoDbConnector {
                 return;
             default:
                 String id = docs.get(Integer.parseInt(input)-1).getObjectId("_id").toString();
-                showDetails(id);
+                showRoutineDetails(id);
         }
     }
 
-    public void showDetails(String id){
+    public Document signIn(String username, String password) {
+        Document doc = users.find(and(eq("email",username),eq("password",password))).first();
+        return doc;
+    }
+
+    public void signUp(Document user){
+        try {
+            InsertOneResult result = users.insertOne(user);
+            System.out.println("Success! Inserted document id: " + result.getInsertedId());
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
+    }
+
+    public void showCurrentRoutine(String user){
+        String c_day = LocalDate.now().toString();
+        Bson match = match(and(eq("user",user),gt("end_day",c_day)));
+        Bson proj = project(fields(exclude("user","warm_up","exercises","stretching")));
+
+        Document r = workout.aggregate(Arrays.asList(match,proj)).first();
+
+        if(r==null)
+            System.out.println("you don't have current routines");
+        else {
+            ArrayList<Document> docs = new ArrayList<>();
+            docs.add(r);
+            printRoutines(docs);
+            //vedi dettagli
+
+            System.out.println("Press 1 to select the routine\n" +
+                    "or press any key to return to the main menu");
+
+            Scanner sc = new Scanner(System.in);
+            String input = sc.next();
+            switch (input) {
+                case "1":
+                    String id = r.getObjectId("_id").toString();
+                    showRoutineDetails(id);
+                    return;
+                default:
+                    return;
+            }
+        }
+
+    }
+
+    public void showExercise(String ex){
+        Document doc = workout.find(and(eq("name",ex),ne("type",null))).first();
+        System.out.print("Exercise:\t"+ex+"\n");
+        System.out.print("type: " + doc.getString("type")+"\t");
+        System.out.print("level: " + doc.getString("level")+"\n");
+        System.out.print("muscle_targeted: " + doc.getString("muscle_targeted")+"\t");
+        System.out.print("equipment: " + doc.getString("equipment")+"\n");
+        System.out.print("images:\n");
+        for(Document d: (ArrayList<Document>)doc.get("images")) {
+            System.out.print(d.getString("image")+"\n");
+        }
+        if(doc.getString("details")!=null)
+            System.out.print("details:\n" + doc.getString("details")+"\n");
+
+        System.out.println("Press any key to return");
+        Scanner sc = new Scanner(System.in);
+        String input = sc.next();
+    }
+
+    public void showPastRoutines(String user){
+        String c_day = LocalDate.now().toString();
+        Bson match = match(and(eq("user",user),lt("end_day",c_day)));
+        Bson proj = project(exclude("user","warm_up","exercises","stretching"));
+
+        ArrayList<Document> docs = new ArrayList<>();
+        workout.aggregate(Arrays.asList(match,proj)).into(docs);
+        if(docs.size()==0)
+            System.out.println("you don't have past routines");
+        else {
+            printRoutines(docs);
+            for (int i = 0; i < docs.size(); i++) {
+                System.out.print((i + 1) + ") ");
+                //printRoutine(docs.get(i));
+            }
+            selectRoutine(docs);
+        }
+    }
+
+    public void showRoutineDetails(String id){
         Bson match = match(eq("_id",new ObjectId(id)));
         Bson proj = project(fields(excludeId(), exclude("user","comments")));
         Document doc = workout.aggregate(Arrays.asList(match,proj)).first();
@@ -269,24 +288,47 @@ public class MongoDbConnector {
 
     }
 
-    public void showExercise(String ex){
-        Document doc = workout.find(and(eq("name",ex),ne("type",null))).first();
-        System.out.print("Exercise:\t"+ex+"\n");
-        System.out.print("type: " + doc.getString("type")+"\t");
-        System.out.print("level: " + doc.getString("level")+"\n");
-        System.out.print("muscle_targeted: " + doc.getString("muscle_targeted")+"\t");
-        System.out.print("equipment: " + doc.getString("equipment")+"\n");
-        System.out.print("images:\n");
-        for(Document d: (ArrayList<Document>)doc.get("images")) {
-            System.out.print(d.getString("image")+"\n");
+    public String showUserDetails(String id){
+        Document doc = users.find(eq("user_id", id)).first();
+        if(doc==null){
+            System.out.println("User not found");
+            return null;
         }
-        if(doc.getString("details")!=null)
-            System.out.print("details:\n" + doc.getString("details")+"\n");
 
-        System.out.println("Press any key to return");
-        Scanner sc = new Scanner(System.in);
-        String input = sc.next();
+        while(true){
+            //System.out.println("--------------------------------------------------------------------------------------------------------");
+            System.out.println("USER DETAILS:\n");
+            //System.out.println("--------------------------------------------------------------------------------------------------------");
+
+            System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer", "Height", "Weight\n");
+            System.out.println("--------------------------------------------------------------------------------------------------------");
+
+            System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", doc.getString("user_id"),doc.getString("name"),
+                    doc.getString("gender"),doc.getString("year_of_birth"), doc.getString("level"),
+                    doc.getString("trainer"), doc.getString("height"),doc.getString("weight"));
+            System.out.println("\n");
+
+            if(doc.getString("train") != null)      System.out.println("Train:\n" + doc.getString("train")+"\n");
+            if(doc.getString("background")!= null)  System.out.println("Background:\n" + doc.getString("background")+"\n");
+            if(doc.getString("experience")!= null)  System.out.println("Experience:\n" + doc.getString("experience")+"\n");
+
+            System.out.println("\nPress 1 to FOLLOW the user\n" +
+                                "Press 2 to UNFOLLOW the user\n" +
+                                "or press another key to return");
+            Scanner sc = new Scanner(System.in);
+            String input = sc.next();
+            switch (input) {
+                case "1":
+                    return "follow";
+                case "2":
+                    return "unfollow";
+                default: return null;
+            }
+        }
+
     }
+
+
 
 }
 

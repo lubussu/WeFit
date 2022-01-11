@@ -93,7 +93,7 @@ public class WeFit {
                     uM.showPastRoutines();
                     break;
                 case "3":
-                    System.out.println("There are no people your are following...\n");
+                    uM.showFollowedUsers();
                     break;
                 case "4":
                     System.out.println("You have not yet commented any routine...\n");
@@ -160,3 +160,10 @@ public class WeFit {
         };
     }
 }
+
+//Judith_Eyres718285046@liret.org
+//3eYZcK8f
+
+
+//Adela_Ogilvy1922996892@eirey.tech
+//n0E3vqza
