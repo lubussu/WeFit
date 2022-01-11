@@ -2,7 +2,6 @@ package wefit.db;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoException;
 import com.mongodb.client.*;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
@@ -41,40 +40,6 @@ public class MongoDbConnector {
 
         workout = db.getCollection("workout");
         users = db.getCollection("users");
-    }
-
-    public void insertComment(Document comment, String id){
-        Bson filter = eq("_id", id);
-        Bson change = push("comments", comment);
-        workout.updateOne(filter, change);
-    }
-
-    public void insertVote(String id, int vote){
-        Bson filter = eq("_id", id);
-        int score, nVotes;
-        String score_string = null;
-        String nVotes_string = null;
-        try (MongoCursor<Document> cursor = workout.find().iterator())
-        {
-            while (cursor.hasNext())
-            {
-                nVotes_string = cursor.next().getString("num_votes");
-                score_string = cursor.next().getString("vote");
-            }
-        }
-
-        if(score_string == null || nVotes_string == null){
-            System.out.println("Couldn't add your vote...");
-            return;
-        }
-
-        score = Integer.parseInt(score_string);
-        nVotes = Integer.parseInt(nVotes_string);
-        score = ((score*nVotes)+vote)/(nVotes+1);
-        nVotes = nVotes+1;
-
-        workout.updateOne(eq("_id", id), set("vote", score));
-        workout.updateOne(eq("_id", id), set("num_votes", nVotes));
     }
 
     public void changeProfile(Document user){
@@ -323,17 +288,15 @@ public class MongoDbConnector {
 
     }
 
-    public String showUserDetails(String id){
+    public boolean showUserDetails(String id){
         Document doc = users.find(eq("user_id", id)).first();
         if(doc==null){
             System.out.println("User not found");
-            return null;
+            return false;
         }
 
         while(true){
-            //System.out.println("--------------------------------------------------------------------------------------------------------");
             System.out.println("USER DETAILS:\n");
-            //System.out.println("--------------------------------------------------------------------------------------------------------");
 
             System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer", "Height", "Weight\n");
             System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -347,17 +310,14 @@ public class MongoDbConnector {
             if(doc.getString("background")!= null)  System.out.println("Background:\n" + doc.getString("background")+"\n");
             if(doc.getString("experience")!= null)  System.out.println("Experience:\n" + doc.getString("experience")+"\n");
 
-            System.out.println("\nPress 1 to FOLLOW the user\n" +
-                                "Press 2 to UNFOLLOW the user\n" +
+            System.out.println("\nPress 1 to FOLLOW / UNFOLLOW the user\n" +
                                 "or press another key to return");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
                 case "1":
-                    return "follow";
-                case "2":
-                    return "unfollow";
-                default: return null;
+                    return true;
+                default: return false;
             }
         }
 
