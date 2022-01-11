@@ -323,15 +323,17 @@ public class MongoDbConnector {
 
     }
 
-    public boolean showUserDetails(String id){
+    public String showUserDetails(String id){
         Document doc = users.find(eq("user_id", id)).first();
         if(doc==null){
             System.out.println("User not found");
-            return false;
+            return null;
         }
 
         while(true){
+            //System.out.println("--------------------------------------------------------------------------------------------------------");
             System.out.println("USER DETAILS:\n");
+            //System.out.println("--------------------------------------------------------------------------------------------------------");
 
             System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer", "Height", "Weight\n");
             System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -345,14 +347,17 @@ public class MongoDbConnector {
             if(doc.getString("background")!= null)  System.out.println("Background:\n" + doc.getString("background")+"\n");
             if(doc.getString("experience")!= null)  System.out.println("Experience:\n" + doc.getString("experience")+"\n");
 
-            System.out.println("\nPress 1 to FOLLOW / UNFOLLOW the user\n" +
+            System.out.println("\nPress 1 to FOLLOW the user\n" +
+                                "Press 2 to UNFOLLOW the user\n" +
                                 "or press another key to return");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
                 case "1":
-                    return true;
-                default: return false;
+                    return "follow";
+                case "2":
+                    return "unfollow";
+                default: return null;
             }
         }
 
