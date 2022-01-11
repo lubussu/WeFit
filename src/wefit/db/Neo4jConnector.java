@@ -33,6 +33,16 @@ public class Neo4jConnector {
         graph_driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
     }
 
+    public void followUser(String user, String followed){
+        try ( Session session = graph_driver.session() ) {
+            session.run("MATCH (a:User) MATCH (b:User) " +
+                            "WHERE a.user_id = $user AND b.user_id = $followed " +
+                            "MERGE (a)-[:FOLLOW]->(b) RETURN a,b",
+                    parameters("user", user, "followed", followed));
+        };
+        System.out.println("User " + user +" succesfully follow!");
+    }
+
     public void printRoutines(ArrayList<Record> rec){
         System.out.printf("%3s %10s %15s %15s %15s", "   ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -44,7 +54,7 @@ public class Neo4jConnector {
         }
     }
 
-    public void printUsers(ArrayList<Record> rec){
+    public void printUsers(ArrayList<Record> rec) {
         System.out.printf("%3s %10s %20s %10s %15s %15s %10s", "   ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
@@ -132,6 +142,16 @@ public class Neo4jConnector {
             default:
                 return followed.get(Integer.parseInt(input)-1).get("routine").get("_id").toString().replace("\"","");
         }
+    }
+
+    public void unfollowUser(String user, String followed){
+        try ( Session session = graph_driver.session() ) {
+            session.run("MATCH (a:User)-[f:FOLLOW]->(b:User) " +
+                            "WHERE a.user_id = $user AND b.user_id = $followed " +
+                            "DELETE f",
+                        parameters("user", user, "followed", followed));
+        };
+        System.out.println("User " + user +" succesfully unfollow!");
     }
 
 }

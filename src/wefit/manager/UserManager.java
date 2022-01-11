@@ -278,7 +278,9 @@ public class UserManager {
 
     }
 
-    public void showCurrentRoutine(){   mongoDb.showCurrentRoutine(self.getString("user_id"));}
+    public void showCurrentRoutine(){
+        mongoDb.showCurrentRoutine(self.getString("user_id"));
+    }
 
     public void showFollowedUsers(){
         String ret = neo4j.showFollowedUsers(self.getString("user_id"));
@@ -290,19 +292,12 @@ public class UserManager {
             mongoDb.showRoutineDetails(ret.substring(2));
         }
         else{ // the user want to see details of one user
-            String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
-            if(option==null)
+            boolean option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
+            if(option==false)
                 return;
-            switch (option){
-                case "follow":
-                    //neo4j.followUser(String user);
-                    break;
-                case "unfollow":
-                    //neo4j.unfollowUser(String user);
-                    break;
-            }
+            else
+                neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
         }
-
     }
 
     public void showPastRoutines(){ mongoDb.showPastRoutines(self.getString("user_id"));}
