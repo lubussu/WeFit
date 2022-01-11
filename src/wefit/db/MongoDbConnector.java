@@ -2,6 +2,7 @@ package wefit.db;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoException;
 import com.mongodb.client.*;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
@@ -40,6 +41,40 @@ public class MongoDbConnector {
 
         workout = db.getCollection("workout");
         users = db.getCollection("users");
+    }
+
+    public void insertComment(Document comment, String id){
+        Bson filter = eq("_id", id);
+        Bson change = push("comments", comment);
+        workout.updateOne(filter, change);
+    }
+
+    public void insertVote(String id, int vote){
+        Bson filter = eq("_id", id);
+        int score, nVotes;
+        String score_string = null;
+        String nVotes_string = null;
+        try (MongoCursor<Document> cursor = workout.find().iterator())
+        {
+            while (cursor.hasNext())
+            {
+                nVotes_string = cursor.next().getString("num_votes");
+                score_string = cursor.next().getString("vote");
+            }
+        }
+
+        if(score_string == null || nVotes_string == null){
+            System.out.println("Couldn't add your vote...");
+            return;
+        }
+
+        score = Integer.parseInt(score_string);
+        nVotes = Integer.parseInt(nVotes_string);
+        score = ((score*nVotes)+vote)/(nVotes+1);
+        nVotes = nVotes+1;
+
+        workout.updateOne(eq("_id", id), set("vote", score));
+        workout.updateOne(eq("_id", id), set("num_votes", nVotes));
     }
 
     public void changeProfile(Document user){

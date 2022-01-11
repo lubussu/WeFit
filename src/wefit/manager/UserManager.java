@@ -2,9 +2,7 @@ package wefit.manager;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.types.ObjectId;
 import wefit.db.MongoDbConnector;
-import wefit.db.Neo4jConnector;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,16 +22,52 @@ import static com.mongodb.client.model.Projections.fields;
 public class UserManager {
 
     private Document self;
-    private MongoDbConnector mongoDb;
-    private Neo4jConnector neo4j;
-
+    static MongoDbConnector mongoDb;
 
     public UserManager(Document user, MongoDbConnector mongo){
         this.self = user;
         this.mongoDb = mongo;
-        this.neo4j = neo4j = new Neo4jConnector("bolt://localhost:7687", "neo4j", "wefit" );
     }
+    public Document signUp(){
+        String name, gender, yob, height, weight, training, bg, exp, email, password;
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Your are signing-up as a new user, please insert your credentials\n" +
+                "Insert your name...\n");
+        name = sc.next();
+        System.out.println("...and your surname");
+        name = " " + sc.next();
+        System.out.println("Insert your gender...\n");
+        gender = sc.next();
+        System.out.println("Insert your year of birth...\n");
+        yob = sc.next();
+        System.out.println("Insert your height...\n");
+        height = sc.next();
+        System.out.println("Insert your weight...\n");
+        weight = sc.next();
+        System.out.println("Describe your current training routine...\n");
+        training = sc.next();
+        System.out.println("Describe your training or sportive background...\n");
+        bg = sc.next();
+        System.out.println("Describe your athletic experiences...\n");
+        exp = sc.next();
+        System.out.println("Insert your email...\n");
+        email = sc.next();
+        System.out.println("Choose a password...\n");
+        password = sc.next();
+        self = null;
+        self.append("name", name).append("gender", gender).append("year_of_birth", yob).append("height", height).append("weight", weight);
+        self.append("train", training).append("background", bg).append("experience", exp).append("email", email).append("password", password);
+        self.append("level", "Pending").append("trainer", "no");
+        System.out.println(self.toString());
+        mongoDb.signUp(self);
+        //Neo4j.signUp();
+        System.out.println("Nice, from now on your are a member of the WeFit community,\n" +
+                "soon one of our trainer will contact you to assign a training level\n" +
+                "and build a personal routine with you!\n" +
+                "We hope your stay here will be a pleasurable one!\n");
+        return self;
 
+    }
     public void changeProfile(){
         System.out.println("1) Name: " + self.getString("name"));
         System.out.println("2) Gender: " + self.getString("gender"));
@@ -141,7 +175,8 @@ public class UserManager {
             }
         }
     }
-
+    public void showCurrentRoutine(){   mongoDb.showCurrentRoutine(self.getString("user_id"));}
+    public void showPastRoutines(){ mongoDb.showPastRoutines(self.getString("user_id"));}
     public void findRoutine(){
         System.out.println("\nInsert filters for find a routine..");
         System.out.println("1) User");
@@ -237,68 +272,5 @@ public class UserManager {
         }
     }
 
-    public Document signUp(){
-        String name, gender, yob, height, weight, training, bg, exp, email, password;
-        Scanner sc = new Scanner(System.in);
-        System.out.println("Your are signing-up as a new user, please insert your credentials\n" +
-                "Insert your name...\n");
-        name = sc.next();
-        System.out.println("...and your surname");
-        name = " " + sc.next();
-        System.out.println("Insert your gender...\n");
-        gender = sc.next();
-        System.out.println("Insert your year of birth...\n");
-        yob = sc.next();
-        System.out.println("Insert your height...\n");
-        height = sc.next();
-        System.out.println("Insert your weight...\n");
-        weight = sc.next();
-        System.out.println("Describe your current training routine...\n");
-        training = sc.next();
-        System.out.println("Describe your training or sportive background...\n");
-        bg = sc.next();
-        System.out.println("Describe your athletic experiences...\n");
-        exp = sc.next();
-        System.out.println("Insert your email...\n");
-        email = sc.next();
-        System.out.println("Choose a password...\n");
-        password = sc.next();
-        self = null;
-        self.append("name", name).append("gender", gender).append("year_of_birth", yob).append("height", height).append("weight", weight);
-        self.append("train", training).append("background", bg).append("experience", exp).append("email", email).append("password", password);
-        self.append("level", "Pending").append("trainer", "no");
-        System.out.println(self.toString());
-        mongoDb.signUp(self);
-        //Neo4j.signUp();
-        System.out.println("Nice, from now on your are a member of the WeFit community,\n" +
-                "soon one of our trainer will contact you to assign a training level\n" +
-                "and build a personal routine with you!\n" +
-                "We hope your stay here will be a pleasurable one!\n");
-        return self;
 
-    }
-
-    public void showCurrentRoutine(){
-        mongoDb.showCurrentRoutine(self.getString("user_id"));
-    }
-
-    public void showFollowedUsers(){
-        String ret = neo4j.showFollowedUsers(self.getString("user_id"));
-        if(ret==null)
-            return;
-        if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users
-            ArrayList<Bson> match = new ArrayList<>();
-            System.out.println(ret.substring(2));
-            mongoDb.showRoutineDetails(ret.substring(2));
-        }
-        else{ // the user want to see details of one user
-            boolean option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
-            if(option==false)
-                return;
-            else
-                neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
-        }
-    }
-
-    public void showPastRoutines(){ mongoDb.showPastRoutines(self.getString("user_id"));}
 }
