@@ -45,8 +45,8 @@ public class UserManager {
         System.out.println("8) Experience: " + self.getString("experience"));
         System.out.println("9) Email: " + self.getString("email"));
         System.out.println("10) Password: " + self.getString("password"));
-        System.out.println("0) Save your changes");
-        System.out.println("Select an option to change...");
+        System.out.println("0) Save your changes\n");
+        System.out.println("Select an option or press \'r\' to return...");
         Scanner sc = new Scanner(System.in);
         String input;
         while(true) {
@@ -138,6 +138,8 @@ public class UserManager {
                 case "0":
                     mongoDb.changeProfile(self);
                     return;
+                case "r":
+                    return;
             }
         }
     }
@@ -149,8 +151,8 @@ public class UserManager {
         System.out.println("3) Level");
         System.out.println("4) Vote");
         System.out.println("5) Data");
-        System.out.println("0) Search routine(s)");
-        System.out.println("Select an option...");
+        System.out.println("0) Search routine(s)\n");
+        System.out.println("Select an option or press \'r\' to return...");
         Scanner sc = new Scanner(System.in);
         ArrayList<Bson> matches = new ArrayList<>();
         String input;
@@ -230,6 +232,110 @@ public class UserManager {
                 }
                 case "0":
                     mongoDb.searchRoutines(matches);
+                    return;
+                case "r":
+                    return;
+                default:
+                    System.out.println("Please select an existing option!\n");
+            }
+        }
+    }
+
+    public void findUser(){
+        System.out.println("\nInsert filters for find a user..");
+        System.out.println("1) User_id");
+        System.out.println("2) Name");
+        System.out.println("3) Gender");
+        System.out.println("4) Year of birth");
+        System.out.println("5) Trainer");
+        //System.out.println("6) Weight"); ???
+        //System.out.println("7) Height"); ???
+        System.out.println("0) Search user(s)\n");
+        System.out.println("Select an option or press \'r\' to return...");
+        Scanner sc = new Scanner(System.in);
+        ArrayList<Bson> matches = new ArrayList<>();
+        String input;
+        while(true) {
+            BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+            input = sc.next();
+            switch (input) {
+                case "1": {
+                    System.out.println("Insert the \'user_id\'");
+                    try {
+                        input = bufferRead.readLine();
+                    } catch (IOException e) { e.printStackTrace();}
+                    matches.add(match(eq("user_id", input)));
+
+                    System.out.println("\nInsert another filter or press 0 to search");
+                    break;
+                }
+                case "2": {
+                    System.out.println("Insert the \'name\' of the user");
+                    try {
+                        input = bufferRead.readLine();
+                    } catch (IOException e) { e.printStackTrace();}
+                    matches.add(match(eq("name", input)));
+
+                    System.out.println("Insert another filter or press 0 to search");
+                    break;
+                }
+                case "3": {
+                    System.out.println("Press \'f\' to find a female user or \'m\' to find a male user");
+                    input= sc.next();
+                    switch (input) {
+                        case "f":
+                            matches.add(match(lt("gender", "Female")));
+                            break;
+                        case "m":
+                            matches.add(match(gte("gender", "Male")));
+                            break;
+                        default:
+                            System.out.println("Please try again");
+                    }
+                    System.out.println("Insert another filter or press 0 to search");
+                    break;
+
+                }
+                case "4": {
+                    System.out.println("Insert the \'Year of birth\' of the user");
+                    input = sc.next();
+                    if(!input.matches("[0-9.]"))
+                        System.out.println("Please insert a number between 1 and 5");
+                    System.out.println("Press 0 to find younger users or 1 to find oldest or peer users");
+                    String x = sc.next();
+                    switch (x){
+                        case "0":
+                            matches.add(match(gt("year_of_birth",Integer.parseInt(input))));
+                            break;
+                        case"1":
+                            matches.add(match(lte("year_of_birth",Integer.parseInt(input))));
+                            break;
+                        default:
+                            System.out.println("Please try again");
+                    }
+                    System.out.println("Insert another filter or press 0 to search");
+                    break;
+                }
+                case "5": {
+                    System.out.println("Press y to find a trainer or n to find a simple user");
+                    input = sc.next();
+                    switch (input){
+                        case "y":
+                            matches.add(match(lt("trainer","yes")));
+                            break;
+                        case"n":
+                            matches.add(match(gte("no","no")));
+                            break;
+                        default:
+                            System.out.println("Please try again");
+                    }
+                    System.out.println("Insert another filter or press 0 to search");
+                    break;
+                }
+                case "0":
+                    mongoDb.searchUsers(matches);
+                    return;
+                case "r":
                     return;
                 default:
                     System.out.println("Please select an existing option!\n");

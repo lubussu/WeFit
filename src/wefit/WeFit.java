@@ -81,8 +81,9 @@ public class WeFit {
                     "3) See your followed list\n" +
                     "4) See routines you commented\n" +
                     "5) Find a routine by parameter\n" +
-                    "6) Modify your profile\n" +
-                    "7) Log out");
+                    "6) Find a user by parameter\n" +
+                    "7) Modify your profile\n" +
+                    "8) Log out");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -102,9 +103,12 @@ public class WeFit {
                     uM.findRoutine();
                     break;
                 case "6":
-                    uM.changeProfile();
+                    uM.findUser();
                     break;
                 case "7":
+                    uM.changeProfile();
+                    break;
+                case "8":
                     user = null;
                     return;
                 default:

@@ -86,18 +86,36 @@ public class MongoDbConnector {
         }
     }
 
+    public void printUsers(ArrayList<Document> docs) {
+        System.out.printf("%3s %10s %20s %10s %15s %15s %10s", "   ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+        for(int i=0; i<docs.size(); i++) {
+            Document d = docs.get(i);
+            System.out.printf("%3s %10s %20s %10s %15s %15s %10s", (i+1)+") ", d.getString("user_id"),d.getString("name"),
+                    d.getString("gender"),d.getString("year_of_birth"),d.getString("level"),d.getString("trainer"));
+            System.out.println("\n");
+        }
+    }
+
     public void searchRoutines(List<Bson> filters){
         ArrayList<Document> docs = new ArrayList<>();
         workout.aggregate(filters).into(docs);
         if(docs.size()==0)
             System.out.println("Results not found");
         else {
-            printRoutines(docs);/*
-            for (int i = 0; i < docs.size(); i++) {
-                System.out.print((i + 1) + ") ");
-                printRoutine(docs.get(i));
-            }*/
+            printRoutines(docs);
             selectRoutine(docs);
+        }
+    }
+
+    public void searchUsers(List<Bson> filters){
+        ArrayList<Document> docs = new ArrayList<>();
+        users.aggregate(filters).into(docs);
+        if(docs.size()==0)
+            System.out.println("Results not found");
+        else {
+            printUsers(docs);
+            selectUser(docs);
         }
     }
 
@@ -144,6 +162,30 @@ public class MongoDbConnector {
             default:
                 String id = docs.get(Integer.parseInt(input)-1).getObjectId("_id").toString();
                 showRoutineDetails(id);
+        }
+    }
+
+    public void selectUser(ArrayList<Document> docs){
+        String input;
+        while (true) {
+            System.out.println("Press the number of the user you want to select\n" +
+                    "or press 0 to return to the main menu");
+
+            Scanner sc = new Scanner(System.in);
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > docs.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return;
+            default:
+                String id = docs.get(Integer.parseInt(input)-1).getString("user_id");
+                showUserDetails(id);
         }
     }
 
