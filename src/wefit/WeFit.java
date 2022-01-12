@@ -36,8 +36,8 @@ public class WeFit {
                 case "2": {
                     mongoDb = new MongoDbConnector("mongodb://localhost:27017","wefit");
                     UserManager uM = new UserManager(null, mongoDb);
-                    user = uM.signUp();
-                    session(uM);
+                    if(uM.signUp()==false)
+                        return;
                     break;
                 }
                 default:
@@ -52,25 +52,26 @@ public class WeFit {
         Scanner sc = new Scanner(System.in);
         email = sc.next();
         System.out.println("now insert your password...");
-        password = sc.next();
-        System.out.println(email + " " + password);*/
-        email = "Judith_Eyres718285046@liret.org";
-        password = "3eYZcK8f";
+        password = sc.next();*/
+        email = "Carla_Kidd1040527379@nanoff.biz";
+        password = "VSVCdKNy";
         user = mongoDb.signIn(email, password);
 
         if (user != null && user.getString("trainer").equals("no")) {
             UserManager uM = new UserManager(user, mongoDb);
-            session(uM);
+            if(uM.session()==false)
+                exit(1);
         }
         else if(user.getString("trainer").equals("yes")) {
             TrainerManager tM = new TrainerManager(user, mongoDb);
-            sessionTrainer(tM);
+            if(tM.sessionTrainer()==false)
+                exit(1);
         }
         else{
             System.out.println("Incorrect email or password, please retry!");
         }
     }
-
+/*
     public static void session(UserManager uM){
         System.out.println("WELCOME " + user.getString("name"));
         boolean running = true;
@@ -152,7 +153,7 @@ public class WeFit {
                     break;
             }
         }
-    }
+    }*/
 
     public static void addPerson(String name)
     {

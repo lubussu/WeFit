@@ -1,5 +1,7 @@
 package wefit.db;
+import com.mongodb.BasicDBObject;
 import com.mongodb.ConnectionString;
+import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.client.*;
 import com.mongodb.client.result.DeleteResult;
@@ -22,6 +24,7 @@ import org.bson.types.ObjectId;
 
 import static com.mongodb.client.model.Projections.*;
 import java.io.*;
+import java.util.regex.Pattern;
 
 import javax.print.Doc;
 
@@ -54,6 +57,108 @@ public class MongoDbConnector {
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
         }
+    }
+
+    public Document getExercise(String name, String muscle, String type){
+        ArrayList<Document> docs = new ArrayList<>();
+        ArrayList<Bson> filters = new ArrayList<>();
+        filters.add(match(regex("name", ".*"+name+".*", "i")));
+
+        if(muscle != null)
+            filters.add(match(eq("type", muscle)));
+        if(type != null)
+            filters.add(match(eq("muscle_targeted", type)));
+        workout.aggregate(filters).into(docs);
+
+        if(docs.size() == 0) {
+            System.out.println("Exercise not found");
+            return null;
+        }
+
+        for(int i=0; i<docs.size(); i++) {
+            Document d = docs.get(i);
+            System.out.printf("%3s %20s %15s", (i+1)+") ", d.getString("name"),d.getString("level"));
+            System.out.println("\n");
+        }
+
+        String input;
+        while (true) {
+            System.out.println("Select the number of the exercise or 0 to return back");
+            Scanner sc = new Scanner(System.in);
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > docs.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return null;
+            default:
+                Document ex = docs.get(Integer.parseInt(input)-1);
+                return ex;
+        }
+
+    }
+
+    public Bson getFilter(String field, String value, String option){
+
+        switch(option){
+            case "eq":
+                return (match(regex(field, ".*"+value+".*", "i")));
+            case "lt":
+                return (match(lt(field,value)));
+            case "lte":
+                return (match(lte(field,value)));
+            case "gt":
+                return (match(gt(field,value)));
+            case "gte":
+                return (match(gte(field,value)));
+        }
+        return null;
+    }
+
+    public Bson getFilter(String field, int value, String option){
+        switch(option){
+            case "eq":
+                return (match(eq(field,value)));
+            case "lt":
+                return (match(lt(field,value)));
+            case "lte":
+                return (match(lte(field,value)));
+            case "gt":
+                return (match(gt(field,value)));
+            case "gte":
+                return (match(gte(field,value)));
+        }
+        return null;
+    }
+
+    public String getUser(String name){ //restituisce l'id dell'utente cercato, se più di uno stampa gli id e fa scegliere
+        Bson name_filter = regex("name", ".*"+name+".*", "i");
+
+        Document user = new Document();
+        ArrayList<Document> docs = new ArrayList<>();
+        users.find(name_filter).into(docs);
+        if(docs.size()==0)
+            return null;
+        if(docs.size()==1)
+            return docs.get(0).getString("user_id");
+        System.out.println("\nList of users with the insert name");
+        for(Document document :  docs){
+            System.out.println(document.getString("user_id"));
+        }
+        System.out.println("\nSelect a user_id");
+        Scanner sc = new Scanner(System.in);
+        String id = sc.next();
+        Bson id_condition = new Document("$eq", id);
+        Bson id_filter = new Document("user_id", id_condition);
+        for(Document document :  users.find(id_filter)){
+            user = document;
+        }
+        return user.getString("user_id");
     }
 
     public void insertRoutine(Document routine){
@@ -99,6 +204,7 @@ public class MongoDbConnector {
 
     public void searchRoutines(List<Bson> filters){
         ArrayList<Document> docs = new ArrayList<>();
+        filters.add(match(ne("user",null)));
         workout.aggregate(filters).into(docs);
         if(docs.size()==0)
             System.out.println("Results not found");
@@ -117,28 +223,6 @@ public class MongoDbConnector {
             printUsers(docs);
             selectUser(docs);
         }
-    }
-
-    public Document searchUser(String name){
-        Bson name_condition = new Document("$eq", name);
-        Bson name_filter = new Document("name", name_condition);
-        Document user = new Document();
-        String id;
-        ArrayList<Document> docs = new ArrayList<>();
-        users.find(name_filter).into(docs);
-        if(docs.size()==1)
-            return docs.get(0);
-        for(Document document :  users.find(name_filter)){
-            System.out.println(document.getString("user_id"));
-        }
-        Scanner sc = new Scanner(System.in);
-        id = sc.next();
-        Bson id_condition = new Document("$eq", id);
-        Bson id_filter = new Document("user_id", id_condition);
-        for(Document document :  users.find(id_filter)){
-            user = document;
-        }
-        return user;
     }
 
     public void selectRoutine(ArrayList<Document> docs){
@@ -265,10 +349,6 @@ public class MongoDbConnector {
             System.out.println("you don't have past routines");
         else {
             printRoutines(docs);
-            for (int i = 0; i < docs.size(); i++) {
-                System.out.print((i + 1) + ") ");
-                //printRoutine(docs.get(i));
-            }
             selectRoutine(docs);
         }
     }
@@ -330,11 +410,11 @@ public class MongoDbConnector {
 
     }
 
-    public boolean showUserDetails(String id){
+    public String showUserDetails(String id){
         Document doc = users.find(eq("user_id", id)).first();
         if(doc==null){
             System.out.println("User not found");
-            return false;
+            return null;
         }
 
         while(true){
@@ -352,14 +432,16 @@ public class MongoDbConnector {
             if(doc.getString("background")!= null)  System.out.println("Background:\n" + doc.getString("background")+"\n");
             if(doc.getString("experience")!= null)  System.out.println("Experience:\n" + doc.getString("experience")+"\n");
 
-            System.out.println("\nPress 1 to FOLLOW / UNFOLLOW the user\n" +
+            System.out.println("\nPress 1 to FOLLOW the user\n or press 2 to UNFOLLOW the user\n" +
                                 "or press another key to return");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
                 case "1":
-                    return true;
-                default: return false;
+                    return "follow";
+                case "2":
+                    return "unfollow;";
+                default: return null;
             }
         }
 
