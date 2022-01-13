@@ -37,6 +37,26 @@ public class UserManager {
         this.neo4j = neo4j = new Neo4jConnector("bolt://localhost:7687", "neo4j", "wefit" );
     }
 
+    public void addComment(String id){
+        Document comment = new Document();
+        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+        String input = null;
+        try {
+            System.out.println("Insert the comment you want to add...");
+            input = bufferRead.readLine();
+        } catch (IOException e) { e.printStackTrace();}
+        comment.append("Comment", input).append("Time", LocalDate.now()).append("user", self.getString("athlete_id"));
+        mongoDb.insertComment(comment, id);
+    }
+
+    public void addVote(String id){
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Please insert your vote...");
+        String vote_string = sc.next();
+        int vote = Integer.parseInt(vote_string);
+        mongoDb.insertVote(id, vote);
+    }
+
     public void changeProfile(){
         System.out.println("1) Name: " + self.getString("name"));
         System.out.println("2) Gender: " + self.getString("gender"));
@@ -459,7 +479,6 @@ public class UserManager {
         System.out.println("Your are signing-up as a new user, please insert your credentials\n" +
                 "Insert your name...\n");
         name = sc.next();
-        System.out.println("...and your surname");
         name = " " + sc.next();
         System.out.println("Insert your gender...\n");
         gender = sc.next();
