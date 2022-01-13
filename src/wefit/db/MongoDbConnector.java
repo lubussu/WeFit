@@ -8,6 +8,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
 
+import java.awt.image.AreaAveragingScaleFilter;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -57,50 +58,6 @@ public class MongoDbConnector {
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
         }
-    }
-
-    public Document getExercise(String name, String muscle, String type){
-        ArrayList<Document> docs = new ArrayList<>();
-        ArrayList<Bson> filters = new ArrayList<>();
-        filters.add(match(regex("name", ".*"+name+".*", "i")));
-
-        if(muscle != null)
-            filters.add(match(eq("type", muscle)));
-        if(type != null)
-            filters.add(match(eq("muscle_targeted", type)));
-        workout.aggregate(filters).into(docs);
-
-        if(docs.size() == 0) {
-            System.out.println("Exercise not found");
-            return null;
-        }
-
-        for(int i=0; i<docs.size(); i++) {
-            Document d = docs.get(i);
-            System.out.printf("%3s %20s %15s", (i+1)+") ", d.getString("name"),d.getString("level"));
-            System.out.println("\n");
-        }
-
-        String input;
-        while (true) {
-            System.out.println("Select the number of the exercise or 0 to return back");
-            Scanner sc = new Scanner(System.in);
-            input = sc.next();
-            if (!input.matches("[0-9.]+"))
-                System.out.println("Please select an existing option!");
-            else if ((Integer.parseInt(input)) > docs.size())
-                System.out.println("Please select an existing option!\n");
-            else
-                break;
-        }
-        switch (input) {
-            case "0":
-                return null;
-            default:
-                Document ex = docs.get(Integer.parseInt(input)-1);
-                return ex;
-        }
-
     }
 
     public Bson getFilter(String field, String value, String option){
@@ -204,12 +161,13 @@ public class MongoDbConnector {
         workout.updateOne(eq("_id", id), set("num_votes", nVotes));
     }
 
-    public void printEx(Document doc, String type){
-        System.out.printf("%40s %20s %15s %15s %10s", "Name", "Muscle Targeted", "Equipment", "Type", "Weight\n");
+    public void printExercises(ArrayList<Document> docs){
+        System.out.printf("%3s %50s %20s %15s %15s", "   ", "Name", "Muscle Targeted", "Equipment", "Type\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
-        for(Document d: (ArrayList<Document>)doc.get(type)) {
-            System.out.printf("%40s %20s %15s %15s %10d", d.getString("name"),d.getString("muscle_targeted"),
-                    d.getString("equipment"),d.getString("type"),d.getInteger("weight"));
+        for(int i=0;i<docs.size();i++) {
+            Document d = docs.get(i);
+            System.out.printf("%3s %50s %20s %15s %15s", (i+1)+") ", d.getString("name"),d.getString("muscle_targeted"),
+                    d.getString("equipment"),d.getString("type"));
             System.out.println();
         }
     }
@@ -256,6 +214,31 @@ public class MongoDbConnector {
         else {
             printUsers(docs);
             selectUser(docs);
+        }
+    }
+
+    public Document selectExercise(ArrayList<Document> docs, boolean print){
+        String input;
+        while (true) {
+            System.out.println("\nPress the number of the exercise you want to select\n" +
+                    "or press 0 to return");
+
+            Scanner sc = new Scanner(System.in);
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > docs.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return null;
+            default:
+                if(print==true)
+                    showExercisesDetails(docs.get(Integer.parseInt(input)-1));
+                return docs.get(Integer.parseInt(input)-1);
         }
     }
 
@@ -353,23 +336,30 @@ public class MongoDbConnector {
 
     }
 
-    public void showExercise(String ex){
-        Document doc = workout.find(and(eq("name",ex),ne("type",null))).first();
-        System.out.print("Exercise:\t"+ex+"\n");
-        System.out.print("type: " + doc.getString("type")+"\t");
-        System.out.print("level: " + doc.getString("level")+"\n");
-        System.out.print("muscle_targeted: " + doc.getString("muscle_targeted")+"\t");
-        System.out.print("equipment: " + doc.getString("equipment")+"\n");
-        System.out.print("images:\n");
-        for(Document d: (ArrayList<Document>)doc.get("images")) {
-            System.out.print(d.getString("image")+"\n");
-        }
-        if(doc.getString("details")!=null)
-            System.out.print("details:\n" + doc.getString("details")+"\n");
+    public Document showExercises(String ex, boolean print, String muscle, String type){
+        ArrayList<Bson> filters = new ArrayList<>();
+        filters.add(match(regex("name", ".*"+ex+".*", "i")));
 
-        System.out.println("Press any key to return");
-        Scanner sc = new Scanner(System.in);
-        String input = sc.next();
+
+        if(muscle != null)
+            filters.add(match(eq("muscle_targeted", muscle)));
+
+        if(type != null)
+            filters.add(match(eq("type", type)));
+        else
+            filters.add(match(ne("type",null)));
+
+        ArrayList<Document> docs = new ArrayList<>();
+        workout.aggregate(filters).into(docs);
+        if(docs.size()==0){
+            System.out.println("Exercise not found\n");
+            return null;
+        }
+
+        printExercises(docs);
+        return selectExercise(docs, print);
+
+
     }
 
     public void showPastRoutines(String user){
@@ -385,6 +375,28 @@ public class MongoDbConnector {
             printRoutines(docs);
             selectRoutine(docs);
         }
+    }
+
+    public Document showExercisesDetails(Document doc){
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+        System.out.print("EXERCISE:\t"+doc.getString("name")+"\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+
+        System.out.print("Type: " + doc.getString("type")+"\t");
+        System.out.print("Level: " + doc.getString("level")+"\n");
+        System.out.print("Muscle targeted: " + doc.getString("muscle_targeted")+"\t");
+        System.out.print("Equipment: " + doc.getString("equipment")+"\n");
+        System.out.print("Images:\n");
+        for(Document d: (ArrayList<Document>)doc.get("images")) {
+            System.out.print(d.getString("image")+"\n");
+        }
+        if(doc.getString("details")!=null)
+            System.out.print("Details:\n" + doc.getString("details")+"\n");
+
+        System.out.println("\nPress any key to return");
+        Scanner sc = new Scanner(System.in);
+        String input = sc.next();
+        return doc;
     }
 
     public void showRoutineDetails(String id){
@@ -405,15 +417,15 @@ public class MongoDbConnector {
             System.out.print("rest_time(sec): " + doc.getInteger("rest_time(sec)")+"\n\n");
 
             System.out.print("WARM UP:\n");
-            printEx(doc, "warm_up");
+            printExercises((ArrayList<Document>)doc.get("warm_up"));
             System.out.println();
 
             System.out.print("EXERCISES:\tRepeat the sequence "+doc.getInteger("repeat")+" times\n");
-            printEx(doc, "exercises");
+            printExercises((ArrayList<Document>)doc.get("exercises"));
             System.out.println();
 
             System.out.print("STRETCHING:\n");
-            printEx(doc, "stretching");
+            printExercises((ArrayList<Document>)doc.get("stretching"));
 
             System.out.println("\nPress 1 to search an exercise\n"+
                                 "Press 2 to comment the routine\n"+
@@ -429,7 +441,7 @@ public class MongoDbConnector {
                     try {
                         exercise = bufferRead.readLine();
                     } catch (IOException e) { e.printStackTrace();}
-                    showExercise(exercise);
+                    showExercises(exercise, true,null, null);
                     continue;
                 }
                 case "2":

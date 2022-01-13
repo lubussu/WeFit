@@ -45,7 +45,7 @@ public class UserManager {
             System.out.println("Insert the comment you want to add...");
             input = bufferRead.readLine();
         } catch (IOException e) { e.printStackTrace();}
-        comment.append("Comment", input).append("Time", LocalDate.now()).append("user", self.getString("athlete_id"));
+        comment.append("Comment", input).append("Time", LocalDate.now()).append("user", self.getString("user_id"));
         mongoDb.insertComment(comment, id);
     }
 
@@ -523,12 +523,12 @@ public class UserManager {
         if(ret==null)
             return;
         if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users
-            ArrayList<Bson> match = new ArrayList<>();
-            System.out.println(ret.substring(2));
             mongoDb.showRoutineDetails(ret.substring(2));
         }
         else{ // the user want to see details of one user
             String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
+            if(option==null)
+                return;
             if(option.equals("follow"))
                 neo4j.followUser(self.getString("user_id"), ret.substring(2));
             if(option.equals("unfollow"))

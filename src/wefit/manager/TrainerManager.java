@@ -30,7 +30,7 @@ public class TrainerManager extends UserManager{
         Scanner sc = new Scanner(System.in);
 
         // insert name and query the db for the user
-        System.out.println("\nInsert the name of the athlete or the user_id...");
+        System.out.println("\nInsert the name of the user or the user_id...");
         String search_name = null;
         try {
             search_name = bufferRead.readLine();
@@ -48,7 +48,7 @@ public class TrainerManager extends UserManager{
         int n = 0;
 
         // cycle all the 17 muscle groups to insert one exercise each
-        while(n<1){
+        while(n<17){
             exercises.add(insertExercise(Muscles[n],null));
             n++;
         }
@@ -79,18 +79,18 @@ public class TrainerManager extends UserManager{
         new_routine.append("trainer", self.getString("user_id"));
 
         System.out.println("Insert the level of the routine...");
-        String fecth = sc.next();
-        new_routine.append("level", fecth);
+        String fetch = sc.next();
+        new_routine.append("level", fetch);
 
         System.out.println("Insert the work time (sec)...");
-        fecth = sc.next();
-        new_routine.append("work_time(sec)", fecth);
+        fetch = sc.next();
+        new_routine.append("work_time(sec)", Integer.parseInt(fetch));
         System.out.println("Insert the rest time (sec)...");
-        fecth = sc.next();
-        new_routine.append("rest_time(sec)", fecth);
+        fetch = sc.next();
+        new_routine.append("rest_time(sec)", Integer.parseInt(fetch));
         System.out.println("Insert the number of repetitions of the routine...");
-        fecth = sc.next();
-        new_routine.append("repeat", fecth);
+        fetch = sc.next();
+        new_routine.append("repeat", Integer.parseInt(fetch));
 
         new_routine.append("warm_up", warmup);
         new_routine.append("exercises", exercises);
@@ -118,19 +118,20 @@ public class TrainerManager extends UserManager{
                 fetch = bufferRead.readLine();
             } catch (IOException e) {e.printStackTrace();}
 
-            ex = mongoDb.getExercise(fetch, muscle, type);
+            ex = mongoDb.showExercises(fetch, false, muscle, type);
             if(ex!=null)
                 break;
         }
+        System.out.println(ex.getString("name")+ " added\n");
         exercise.append("name", ex.getString("name"));
         exercise.append("muscle_targeted", ex.getString("muscle_targeted"));
         exercise.append("equipment", ex.getString("equipment"));
         exercise.append("type", ex.getString("type"));
 
-        System.out.println("\nInsert exercise's weight or \'n\' if weight is not present...");
+        System.out.println("Insert exercise's weight or \'n\' if weight is not present...");
         fetch = sc.next();
         if(!fetch.equals("n"))
-            exercise.append("weight", fetch);
+            exercise.append("weight", Integer.parseInt(fetch));
 
         return exercise;
     }
