@@ -41,19 +41,23 @@ public class UserManager {
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         String input = null;
         try {
-            System.out.println("Insert the comment you want to add...");
+            System.out.println("Insert the comment you want to add or press r to return...");
             input = bufferRead.readLine();
+            if(input.equals("r"))
+                return;
         } catch (IOException e) { e.printStackTrace();}
         comment.append("Comment", input).append("Time", LocalDate.now()).append("user", self.getString("user_id"));
-        //mongoDb.insertComment(comment, id);
+        mongoDb.insertComment(comment, id);
     }
 
     public void addVote(String id){
         Scanner sc = new Scanner(System.in);
-        System.out.println("Please insert your vote...");
+        System.out.println("Please insert your vote or press r to return...");
         String vote_string = sc.next();
+        if(vote_string.equals("r"))
+            return;
         int vote = Integer.parseInt(vote_string);
-       // mongoDb.insertVote(id, vote);
+        mongoDb.insertVote(id, vote);
     }
 
     public void changeProfile(){
@@ -253,7 +257,13 @@ public class UserManager {
                     break;
                 }
                 case "0":
-                    mongoDb.searchRoutines(filters);
+                    String option = mongoDb.searchRoutines(filters);
+                    if(option==null)
+                        return;
+                    else if(option.startsWith("c:"))
+                        addComment(option.substring(2));
+                    else if(option.startsWith(option.substring(2)))
+                        addVote(option.substring(2));
                     return;
                 case "r":
                     return;
@@ -517,16 +527,30 @@ public class UserManager {
     public void showCurrentRoutine(){
         //mongoDb.showCurrentRoutine(self.getString("user_id"));
         String routine = neo4j.showRoutines(self.getString("user_id"), "current");
-        if(routine!=null)
-            mongoDb.showRoutineDetails(routine);
+        if(routine!=null) {
+            String option = mongoDb.showRoutineDetails(routine);
+            if(option==null)
+                return;
+            else if(option.startsWith("c:"))
+                addComment(routine);
+            else if(option.startsWith("v:"))
+                addVote(routine);
+        }
     }
 
     public void showFollowedUsers(){
         String ret = neo4j.showFollowedUsers(self.getString("user_id"));
         if(ret==null)
             return;
-        if(ret.startsWith("r:")) //the user want to see routine details of one of followed users
-            mongoDb.showRoutineDetails(ret.substring(2));
+        if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users
+            String option = mongoDb.showRoutineDetails(ret.substring(2));
+            if(option==null)
+                return;
+            else if(option.startsWith("c:"))
+                addComment(ret.substring(2));
+            else if(option.startsWith("v:"))
+                addVote(ret.substring(2));
+        }
 
         else{ // the user want to see details of one user
             String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
@@ -542,8 +566,15 @@ public class UserManager {
     public void showPastRoutines(){
         //mongoDb.showPastRoutines(self.getString("user_id"));}
         String routine = neo4j.showRoutines(self.getString("user_id"), "current");
-        if(routine!=null)
-            mongoDb.showRoutineDetails(routine);
+        if(routine!=null) {
+            String option = mongoDb.showRoutineDetails(routine);
+            if(option==null)
+                return;
+            else if(option.startsWith("c:"))
+                addComment(routine);
+            else if(option.startsWith("v:"))
+                addVote(routine);
+        }
     }
 
 }

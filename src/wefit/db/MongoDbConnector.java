@@ -122,16 +122,7 @@ public class MongoDbConnector {
         return user.getString("user_id");
     }
 
-    public void insertComment(String id){
-        Document comment = new Document();
-        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-        String input = null;
-        try {
-            System.out.println("Insert the comment you want to add...");
-            input = bufferRead.readLine();
-        } catch (IOException e) { e.printStackTrace();}
-        comment.append("Comment", input).append("Time", LocalDate.now()).append("user", user);
-
+    public void insertComment(Document comment, String id){
         Bson filter = eq("_id", new ObjectId(id));
         Bson change = push("comments", comment);
         workout.updateOne(filter, change);
@@ -147,11 +138,7 @@ public class MongoDbConnector {
         }
     }
 
-    public void insertVote(String id){
-        Scanner sc = new Scanner(System.in);
-        System.out.println("Please insert your vote...");
-        int vote = Integer.parseInt(sc.next());
-
+    public void insertVote(String id, int vote){
         double score;
         int nVotes;
         Document routine = workout.find(eq("_id", new ObjectId(id))).first();
@@ -205,7 +192,7 @@ public class MongoDbConnector {
         }
     }
 
-    public void searchRoutines(List<Bson> filters){
+    public String searchRoutines(List<Bson> filters){
         ArrayList<Document> docs = new ArrayList<>();
         filters.add(match(ne("user",null)));
         workout.aggregate(filters).into(docs);
@@ -213,8 +200,9 @@ public class MongoDbConnector {
             System.out.println("Results not found");
         else {
             printRoutines(docs);
-            selectRoutine(docs);
+            return selectRoutine(docs);
         }
+        return null;
     }
 
     public void searchUsers(List<Bson> filters){
@@ -253,7 +241,7 @@ public class MongoDbConnector {
         }
     }
 
-    public void selectRoutine(ArrayList<Document> docs){
+    public String selectRoutine(ArrayList<Document> docs){
         String input;
         while (true) {
             System.out.println("Press the number of the routine you want to select\n" +
@@ -270,10 +258,10 @@ public class MongoDbConnector {
         }
         switch (input) {
             case "0":
-                return;
+                return null;
             default:
                 String id = docs.get(Integer.parseInt(input)-1).getObjectId("_id").toString();
-                showRoutineDetails(id);
+                return showRoutineDetails(id);
         }
     }
 
@@ -318,7 +306,7 @@ public class MongoDbConnector {
             System.err.println("Unable to insert due to an error: " + me);
         }
     }
-
+/*
     public void showCurrentRoutine(String user){
         String c_day = LocalDate.now().toString();
         Bson match = match(and(eq("user",user),gt("end_day",c_day)));
@@ -349,7 +337,7 @@ public class MongoDbConnector {
             }
         }
 
-    }
+    }*/
 
     public Document showExercises(String ex, boolean print, String muscle, String type){
         ArrayList<Bson> filters = new ArrayList<>();
@@ -373,10 +361,8 @@ public class MongoDbConnector {
 
         printExercises(docs);
         return selectExercise(docs, print);
-
-
     }
-
+/*
     public void showPastRoutines(String user){
         String c_day = LocalDate.now().toString();
         Bson match = match(and(eq("user",user),lt("end_day",c_day)));
@@ -390,7 +376,7 @@ public class MongoDbConnector {
             printRoutines(docs);
             selectRoutine(docs);
         }
-    }
+    }*/
 
     public Document showExercisesDetails(Document doc){
         System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -414,7 +400,7 @@ public class MongoDbConnector {
         return doc;
     }
 
-    public void showRoutineDetails(String id){
+    public String showRoutineDetails(String id){
         Bson match = match(eq("_id",new ObjectId(id)));
         Bson proj = project(fields(excludeId(), exclude("user","comments")));
         Document doc = workout.aggregate(Arrays.asList(match,proj)).first();
@@ -460,12 +446,10 @@ public class MongoDbConnector {
                     continue;
                 }
                 case "2":
-                    insertComment(id);
-                    return;
+                    return "c:"+id;
                 case "3":
-                    insertVote(id);
-                    return;
-                default: return;
+                    return "v:"+id;
+                default: return null;
             }
         }
     }
