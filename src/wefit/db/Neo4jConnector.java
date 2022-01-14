@@ -41,7 +41,17 @@ public class Neo4jConnector {
                             "MERGE (a)-[:FOLLOW]->(b) RETURN a,b",
                     parameters("user", user, "followed", followed));
         };
-        System.out.println("User " + user +" succesfully follow!");
+        System.out.println("User " + user +" successfully follow!");
+    }
+
+    public void insertVote(String user_id, String routine_id, int vote){
+        try ( Session session = graph_driver.session() ) {
+            session.run("MATCH (a:User) MATCH (b:Routine) " +
+                            "WHERE a.user_id = $user AND b._id = routine " +
+                            "CREATE (a)-[:VOTE{vote:$vote}]->(b) RETURN a,b",
+                    parameters("user", user_id, "routine", routine_id, "vote", vote));
+        };
+        System.out.println("Routine voted successfully!");
     }
 
     public void printRoutines(ArrayList<Record> rec){
