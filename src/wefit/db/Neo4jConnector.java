@@ -115,6 +115,21 @@ public class Neo4jConnector {
         return null;
     }
 
+    public void showRecommended(String id) {
+        try (Session session = graph_driver.session()) {
+            ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> persons;
+                persons = tx.run("MATCH (a:User)-[:FOLLOW]->(b:User)-[:FOLLOW]->(c:User) WHERE a.user_id = $user " +
+                                "AND NOT exists((a)-[:FOLLOW]->(c)) AND " +
+                                "a.level = c.level" +
+                                "RETURN c AS user LIMIT 5",
+                        parameters("user", id)).list();
+                return persons;
+            });
+            printUsers(recommended);
+        }
+    }
+
     public String showRoutines(String user, String period){
         ArrayList<Record> followed = new ArrayList<>();
         try ( Session session = graph_driver.session() ) {

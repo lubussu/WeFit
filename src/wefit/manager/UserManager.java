@@ -431,6 +431,14 @@ public class UserManager {
         }
     }
 
+    public void followRecommended(String id){
+        System.out.println("Insert the ID of the user you want to follow...");
+        Scanner sc = new Scanner(System.in);
+        String input;
+        input = sc.next();
+        neo4j.followUser(id, input);
+    }
+
     public boolean session(){
         System.out.println("WELCOME " + self.getString("name"));
         boolean running = true;
