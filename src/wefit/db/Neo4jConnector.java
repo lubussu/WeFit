@@ -28,10 +28,20 @@ import static com.mongodb.client.model.Projections.*;
 import static org.neo4j.driver.Values.parameters;
 
 public class Neo4jConnector {
-    Driver graph_driver;
+    private Driver graph_driver;
 
     public Neo4jConnector(String conn, String username, String password){
         graph_driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
+    }
+
+    public void changeProfile(Document user){
+        try ( Session session = graph_driver.session() ) {
+            session.run("MATCH (a:User) WHERE a.user_id = $user "+
+                    "SET a.name=$name, a.gender=$gender, a.birth=$birth, a.level=$level, a.trainer=$trainer",
+                    parameters("user", user.getString("user_id"), "name", user.getString("name"),
+                            "gender", user.getString("gender"), "birth", user.getString("birth"),
+                            "level", user.getString("level"), "trainer", user.getString("trainer")));
+        };
     }
 
     public void followUser(String user, String followed){
@@ -42,6 +52,26 @@ public class Neo4jConnector {
                     parameters("user", user, "followed", followed));
         };
         System.out.println("User " + user +" succesfully follow!");
+    }
+
+    public void insertUser(Document user) {
+        try ( Session session = graph_driver.session() )
+        {
+            session.run("CREATE (a:User {user_id:$user_id, name:$name, gender:$gender, birth:$birth, level:$level, trainer:$trainer})",
+                    parameters("user_id", user.getString("user_id"), "name", user.getString("name"), "gender", user.getString("gender"),
+                            "birth",user.getString("birth"),"level",user.getString("level"), "trainer", user.getString("trainer")));
+        };
+    }
+
+    public void insertRoutine(Document routine) {
+        try ( Session session = graph_driver.session() )
+        {
+            session.run("MATCH (a:User {user_id:$user}) MATCH (b:User {user_id:$trainer})" +
+                    "CREATE (r:Routine {user:$user, trainer:$trainer, level:$level, starting_day:$s_day, end_day:$e_day}) "+
+                    "CREATE (a)-[:HAS_ROUTINE]->(r) CREATE (b)-[:CREATE_ROUTINE]->(r)",
+                    parameters("user", routine.getString("user"), "trainer", routine.getString("trainer"), "level", routine.getString("level"),
+                            "s_day",routine.getString("starting_day"),"e_day",routine.getString("end_day")));
+        };
     }
 
     public void printRoutines(ArrayList<Record> rec){
@@ -96,6 +126,7 @@ public class Neo4jConnector {
                     return null;
                 default:
                     String id = followed.get(Integer.parseInt(input)-1).get("user").get("user_id").toString();
+                    String trainer = followed.get(Integer.parseInt(input)-1).get("user").get("trainer").toString();
                     System.out.println("Press 1 to see user's details\n"+
                                         "or press 2 to see user's routines");
 
@@ -105,9 +136,32 @@ public class Neo4jConnector {
                         case "1":
                             return "u:"+id.replace("\"","");
                         case"2": {
-                            String routine = showRoutines(id.replace("\"", ""), "all");
-                            if(routine != null)
-                                return "r:" + routine;
+                            if (trainer.equals("yes")){
+                                System.out.println("Press 1 to see routine's for him\n"+
+                                        "or press 2 to see routine's created by him");
+
+                                input = sc.next();
+                                String routine=null;
+                                switch (input){
+                                    case "1":
+                                        routine = showRoutines(id.replace("\"", ""), "all");
+                                        if (routine != null)
+                                            return "r:" + routine;
+                                        System.out.println("Result not found");
+                                        break;
+                                    case "2":
+                                        //routine = showTrainerRoutines(id.replace("\"", ""), "all"); ---> DA FARE
+                                        if (routine != null)
+                                            return "r:" + routine;
+                                        System.out.println("Result not found");
+                                        break;
+                                }
+                            }
+                            else {
+                                String routine = showRoutines(id.replace("\"", ""), "all");
+                                if (routine != null)
+                                    return "r:" + routine;
+                            }
                         }
                     }
             }

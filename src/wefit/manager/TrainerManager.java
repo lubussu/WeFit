@@ -14,6 +14,7 @@ import java.util.Locale;
 import java.util.Scanner;
 
 import static com.mongodb.client.model.Aggregates.match;
+import static com.mongodb.client.model.Aggregates.unwind;
 import static com.mongodb.client.model.Filters.regex;
 
 public class TrainerManager extends UserManager{
@@ -22,6 +23,28 @@ public class TrainerManager extends UserManager{
 
     public TrainerManager(Document trainer, MongoDbConnector mongo){
         super(trainer, mongo);
+    }
+
+    public void addTrainer(){
+        System.out.println("Insert the name or the user_id of the user you want to promote or press r to return..");
+        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+
+        String search_name = null;
+        try {
+            search_name = bufferRead.readLine();
+        } catch (IOException e) {e.printStackTrace();}
+
+        if(search_name == null)
+            return;
+        Document user = new Document();
+        if(!search_name.matches("[0-9.]+"))
+            user = mongoDb.getUser(search_name);
+
+        user.remove("trainer");
+        user.append("trainer", "yes");
+
+        mongoDb.changeProfile(user);
+        neo4j.changeProfile(user);
     }
 
     // Create a routine for a user
@@ -38,7 +61,7 @@ public class TrainerManager extends UserManager{
 
         String user = search_name;
         if(!search_name.matches("[0-9.]+"))
-            user = mongoDb.getUser(search_name);
+            user = mongoDb.getUser(search_name).getString("user_id");
 
         // create variables for building the document
         ArrayList<Document> exercises = new ArrayList<Document>();
@@ -48,7 +71,7 @@ public class TrainerManager extends UserManager{
         int n = 0;
 
         // cycle all the 17 muscle groups to insert one exercise each
-        while(n<17){
+        while(n<1){
             exercises.add(insertExercise(Muscles[n],null));
             n++;
         }
@@ -80,6 +103,7 @@ public class TrainerManager extends UserManager{
 
         System.out.println("Insert the level of the routine...");
         String fetch = sc.next();
+        fetch = fetch.replace(fetch.substring(0,1), fetch.substring(0,1).toUpperCase());
         new_routine.append("level", fetch);
 
         System.out.println("Insert the work time (sec)...");
@@ -102,6 +126,7 @@ public class TrainerManager extends UserManager{
         new_routine.append("vote", 0);
 
         mongoDb.insertRoutine(new_routine);
+        neo4j.insertRoutine(new_routine);
     }
 
     public Document insertExercise(String muscle, String type){
@@ -144,9 +169,10 @@ public class TrainerManager extends UserManager{
                     "1) See your routines\n" +
                     "2) Add a new routine\n" +
                     "3) Add a new exercise\n" +
-                    "4) See normal user menu\n" +
-                    "5) Log out\n" +
-                    "6) Exit the app");
+                    "4) Add a new trainer\n" +
+                    "5) See normal user menu\n" +
+                    "6) Log out\n" +
+                    "7) Exit the app");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -160,13 +186,16 @@ public class TrainerManager extends UserManager{
                     //addExercise();
                     break;
                 case "4":
-                    session();
+                    addTrainer();
                     break;
                 case "5":
+                    session();
+                    break;
+                case "6":
                     running = false;
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     break;
-                case "6":
+                case "7":
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     return false;
                 default:

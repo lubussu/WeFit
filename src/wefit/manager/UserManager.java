@@ -27,7 +27,7 @@ public class UserManager {
 
     protected Document self;
     protected MongoDbConnector mongoDb;
-    private Neo4jConnector neo4j;
+    protected Neo4jConnector neo4j;
 
 
     public UserManager(Document user, MongoDbConnector mongo){
@@ -60,7 +60,7 @@ public class UserManager {
         mongoDb.insertVote(id, vote);
     }
 
-    public void changeProfile(){
+    public void changeProfile(Document user){
         System.out.println("1) Name: " + self.getString("name"));
         System.out.println("2) Gender: " + self.getString("gender"));
         System.out.println("3) Year of birth: " + self.getString("year_of_birth"));
@@ -89,35 +89,35 @@ public class UserManager {
                     //input += " " + sc.next();
                     self.append("name", input);
                     //System.out.println(self.getString("name"));
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "2": {
                     System.out.println("Insert your gender...");
                     input = sc.next();
                     self.append("gender", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "3": {
                     System.out.println("Insert your year of birth...");
                     input = sc.next();
                     self.append("year_of_birth", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "4": {
                     System.out.println("Insert your height...");
                     input = sc.next();
                     self.append("height", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "5": {
                     System.out.println("Insert your weight...");
                     input = sc.next();
                     self.append("weight", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "6": {
@@ -126,7 +126,7 @@ public class UserManager {
                         input = bufferRead.readLine();
                     } catch (IOException e) {e.printStackTrace();}
                     self.append("train", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "7": {
@@ -135,7 +135,7 @@ public class UserManager {
                         input = bufferRead.readLine();
                     } catch (IOException e) {e.printStackTrace();}
                     self.append("background", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "8": {
@@ -144,25 +144,26 @@ public class UserManager {
                         input = bufferRead.readLine();
                     } catch (IOException e) {e.printStackTrace();}
                     self.append("experience", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "9": {
                     System.out.println("Insert your new email...");
                     input = sc.next();
                     self.append("email", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "10": {
                     System.out.println("Insert your new password...");
                     input = sc.next();
                     self.append("password", input);
-                    System.out.println("\nSelect another option or press 0 to save your changes");
+                    System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "0":
-                    mongoDb.changeProfile(self);
+                    mongoDb.changeProfile(user);
+                    neo4j.changeProfile(user);
                     return;
                 case "r":
                     return;
@@ -193,10 +194,15 @@ public class UserManager {
                     } catch (IOException e) { e.printStackTrace();}
                     if(input.matches("[0-9.]+"))
                         filters.add(mongoDb.getFilter("user", input, "eq"));
-                    else
-                        filters.add(mongoDb.getFilter("user", mongoDb.getUser(input), "eq"));
+                    else {
+                        String id = mongoDb.getUser(input).getString("user_id");
+                        if (id == null) {
+                            System.out.println("Trainer not found");
+                            break;
+                        }
+                    }
 
-                    System.out.println("\nInsert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "2": {
@@ -206,16 +212,22 @@ public class UserManager {
                     } catch (IOException e) { e.printStackTrace();}
                     if(input.matches("[0-9.]+"))
                         filters.add(mongoDb.getFilter("trainer", input, "eq"));
-                    else
-                        filters.add(mongoDb.getFilter("trainer", mongoDb.getUser(input), "eq"));
-                    System.out.println("Insert another filter or press 0 to search");
+                    else {
+                        String id = mongoDb.getUser(input).getString("user_id");
+                        if(id==null){
+                            System.out.println("Trainer not found");
+                            break;
+                        }
+                        filters.add(mongoDb.getFilter("trainer", id, "eq"));
+                    }
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "3": {
                     System.out.println("Insert the \'level\'");
                     input = sc.next();
                     filters.add(mongoDb.getFilter("level", input, "eq"));
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "4": {
@@ -235,7 +247,7 @@ public class UserManager {
                         default:
                             System.out.println("Please try again");
                     }
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "5": {
@@ -253,7 +265,7 @@ public class UserManager {
                         default:
                             System.out.println("Please try again");
                     }
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "0":
@@ -298,7 +310,7 @@ public class UserManager {
                     } catch (IOException e) { e.printStackTrace();}
                     filters.add(mongoDb.getFilter("user_id", input, "eq"));
 
-                    System.out.println("\nInsert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "2": {
@@ -308,7 +320,7 @@ public class UserManager {
                     } catch (IOException e) { e.printStackTrace();}
                     filters.add(mongoDb.getFilter("name", input, "eq"));
 
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "3": {
@@ -324,7 +336,7 @@ public class UserManager {
                         default:
                             System.out.println("Please try again");
                     }
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
 
                 }
@@ -350,7 +362,7 @@ public class UserManager {
                         default:
                             System.out.println("Please try again");
                     }
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "5": {
@@ -366,7 +378,7 @@ public class UserManager {
                         default:
                             System.out.println("Please try again");
                     }
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "6": {
@@ -391,7 +403,7 @@ public class UserManager {
                         default:
                             System.out.println("Please try again");
                     }
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "7": {
@@ -417,11 +429,17 @@ public class UserManager {
                         default:
                             System.out.println("Please try again");
                     }
-                    System.out.println("Insert another filter or press 0 to search");
+                    System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
                 case "0":
-                    mongoDb.searchUsers(filters);
+                    String ret = mongoDb.searchUsers(filters);
+                    if(ret==null)
+                        return;
+                    else if(ret.startsWith("u:")) // the user want to see details of one user
+                        neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
+                    else if(ret.startsWith("f:"))
+                        neo4j.followUser(self.getString("user_id"), ret.substring(2));
                     return;
                 case "r":
                     return;
@@ -467,7 +485,7 @@ public class UserManager {
                     findUser();
                     break;
                 case "7":
-                    changeProfile();
+                    changeProfile(self);
                     break;
                 case "8":
                     running = false;
@@ -482,45 +500,75 @@ public class UserManager {
         return true;
     }
 
-    public boolean signUp(){
-        String name, gender, yob, height, weight, training, bg, exp, email, password;
+    public boolean signUp() throws IOException {
+        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+        String name, gender, yob, height, weight, training, bg, exp, email, password, level;
         Scanner sc = new Scanner(System.in);
         System.out.println("Your are signing-up as a new user, please insert your credentials\n" +
-                "Insert your name...\n");
-        name = sc.next();
-        name = " " + sc.next();
-        System.out.println("Insert your gender...\n");
+                "If you want to return press r\n");
+
+        System.out.println("Insert your name...");
+        name = bufferRead.readLine();
+        if(name.equals("r"))
+            return true;
+        System.out.println("Insert your gender...");
         gender = sc.next();
-        System.out.println("Insert your year of birth...\n");
+        if(gender.equals("r"))
+            return true;
+        gender = gender.replace(gender.substring(0,1), gender.substring(0,1).toUpperCase());
+        System.out.println("Insert your year of birth...");
         yob = sc.next();
-        System.out.println("Insert your height...\n");
+        if(yob.equals("r"))
+            return true;
+        System.out.println("Insert your height...");
         height = sc.next();
-        System.out.println("Insert your weight...\n");
+        if(height.equals("r"))
+            return true;
+        System.out.println("Insert your weight...");
         weight = sc.next();
-        System.out.println("Describe your current training routine...\n");
-        training = sc.next();
-        System.out.println("Describe your training or sportive background...\n");
-        bg = sc.next();
-        System.out.println("Describe your athletic experiences...\n");
-        exp = sc.next();
-        System.out.println("Insert your email...\n");
+        if(weight.equals("r"))
+            return true;
+        System.out.println("Insert your level (Beginner/Intermediate/Expert)...");
+        level = sc.next();
+        if(level.equals("r"))
+            return true;
+        level = level.replace(level.substring(0,1), level.substring(0,1).toUpperCase());
+        System.out.println("Describe your current training routine...");
+        training =bufferRead.readLine();
+        if(training.equals("r"))
+            return true;
+        System.out.println("Describe your training or sportive background...");
+        bg = bufferRead.readLine();
+        if(bg.equals("r"))
+            return true;
+        System.out.println("Describe your athletic experiences...");
+        exp = bufferRead.readLine();
+        if(exp.equals("r"))
+            return true;
+        System.out.println("Insert your email...");
         email = sc.next();
-        System.out.println("Choose a password...\n");
+        if(email.equals("r"))
+            return true;
+        System.out.println("Choose a password...");
         password = sc.next();
-        self = null;
+        if(password.equals("r"))
+            return true;
+        int user = mongoDb.lastUser();
+        self = new Document();
+        self.append("user_id", Integer.toString(user));
         self.append("name", name).append("gender", gender).append("year_of_birth", yob).append("height", height).append("weight", weight);
         self.append("train", training).append("background", bg).append("experience", exp).append("email", email).append("password", password);
-        self.append("level", "Pending").append("trainer", "no");
-        System.out.println(self.toString());
+        self.append("level", level).append("trainer", "no");
+
         mongoDb.signUp(self);
-        //Neo4j.signUp();
-        System.out.println("Nice, from now on your are a member of the WeFit community,\n" +
+        neo4j.insertUser(self);
+        System.out.println("\nNice, from now on your are a member of the WeFit community,\n" +
                 "soon one of our trainer will contact you to assign a training level\n" +
                 "and build a personal routine with you!\n" +
                 "We hope your stay here will be a pleasurable one!\n");
         mongoDb.setUser(self.getString("user_id"));
         if (session()==false)
-            return false;
+            return false; //exit the application
         return true;
     }
 
@@ -552,14 +600,17 @@ public class UserManager {
                 addVote(ret.substring(2));
         }
 
-        else{ // the user want to see details of one user
+        else if(ret.startsWith("u:")){ // the user want to see details of one user
+            System.out.println("else");
             String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
+            System.out.println(option);
             if(option==null)
                 return;
-            if(option.equals("follow"))
-                neo4j.followUser(self.getString("user_id"), ret.substring(2));
-            if(option.equals("unfollow"))
+
+            if(option.startsWith("u:")) {
+                System.out.println("unfollow");
                 neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
+            }
         }
     }
 

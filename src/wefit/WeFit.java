@@ -10,6 +10,7 @@ import wefit.db.MongoDbConnector;
 import wefit.manager.TrainerManager;
 import wefit.manager.UserManager;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 import static java.lang.System.exit;
@@ -36,9 +37,13 @@ public class WeFit {
                 case "2": {
                     mongoDb = new MongoDbConnector("mongodb://localhost:27017","wefit");
                     UserManager uM = new UserManager(null, mongoDb);
-                    if(uM.signUp()==false)
-                        return;
-                    break;
+                    try {
+                        if (uM.signUp() == false)
+                            return;
+                        break;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
                 default:
                     System.out.println("Please select an existing option!\n");
@@ -58,27 +63,17 @@ public class WeFit {
         if (user != null && user.getString("trainer").equals("no")) {
             mongoDb.setUser(user.getString("user_id"));
             UserManager uM = new UserManager(user, mongoDb);
-            if(uM.session()==false)
+            if(uM.session()==false) //if session return false the use want to exit
                 exit(1);
         }
         else if(user != null && user.getString("trainer").equals("yes")) {
             mongoDb.setUser(user.getString("user_id"));
             TrainerManager tM = new TrainerManager(user, mongoDb);
-            if(tM.sessionTrainer()==false)
+            if(tM.sessionTrainer()==false) //if session return false the use want to exit
                 exit(1);
         }
         else{
             System.out.println("Incorrect email or password, please retry!");
         }
-    }
-
-    public static void addPerson(String name)
-    {
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
-
-        try ( Session session = driver.session() )
-        {
-            session.run("CREATE (a:Person {name: $name})", parameters("name", name));
-        };
     }
 }

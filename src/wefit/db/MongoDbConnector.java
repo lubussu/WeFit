@@ -32,12 +32,12 @@ import java.util.regex.Pattern;
 import javax.print.Doc;
 
 public class MongoDbConnector {
-    static ConnectionString uri;
-    static MongoClient myClient;
-    static MongoDatabase db;
+    private ConnectionString uri;
+    private MongoClient myClient;
+    private MongoDatabase db;
 
-    static MongoCollection<Document> workout;
-    static MongoCollection<Document> users;
+    private MongoCollection<Document> workout;
+    private MongoCollection<Document> users;
 
     String user;
 
@@ -97,7 +97,7 @@ public class MongoDbConnector {
         return null;
     }
 
-    public String getUser(String name){ //restituisce l'id dell'utente cercato, se più di uno stampa gli id e fa scegliere
+    public Document getUser(String name){ //restituisce l'id dell'utente cercato, se più di uno stampa gli id e fa scegliere
         Bson name_filter = regex("name", ".*"+name+".*", "i");
 
         Document user = new Document();
@@ -106,20 +106,22 @@ public class MongoDbConnector {
         if(docs.size()==0)
             return null;
         if(docs.size()==1)
-            return docs.get(0).getString("user_id");
+            return docs.get(0);
         System.out.println("\nList of users with the insert name");
         for(Document document :  docs){
             System.out.println(document.getString("user_id"));
         }
-        System.out.println("\nSelect a user_id");
+        System.out.println("\nSelect a user_id or press r to retur");
         Scanner sc = new Scanner(System.in);
         String id = sc.next();
+        if(id.equals("r"))
+            return null;
         Bson id_condition = new Document("$eq", id);
         Bson id_filter = new Document("user_id", id_condition);
         for(Document document :  users.find(id_filter)){
             user = document;
         }
-        return user.getString("user_id");
+        return user;
     }
 
     public void insertComment(Document comment, String id){
@@ -159,9 +161,16 @@ public class MongoDbConnector {
         System.out.println("Success! Your comment has been inserted.");
     }
 
+    public int lastUser(){
+        int last_user =  users.find(ne("last_user", null)).first().getInteger("last_user");
+        last_user ++;
+        users.updateOne(ne("last_user", null), set("last_user", last_user));
+        return last_user;
+    }
+
     public void printExercises(ArrayList<Document> docs){
         System.out.printf("%3s %50s %20s %15s %15s", "   ", "Name", "Muscle Targeted", "Equipment", "Type\n");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
         for(int i=0;i<docs.size();i++) {
             Document d = docs.get(i);
             System.out.printf("%3s %50s %20s %15s %15s", (i+1)+") ", d.getString("name"),d.getString("muscle_targeted"),
@@ -172,7 +181,7 @@ public class MongoDbConnector {
 
     private void printRoutines(ArrayList<Document> docs) {
         System.out.printf("%3s %10s %15s %15s %15s", "   ", "Trainer", "Level", "Starting day", "End day\n");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
         for(int i=0; i<docs.size(); i++) {
             Document d = docs.get(i);
             System.out.printf("%3s %10s %15s %15s %15s", (i+1)+") ", d.getString("trainer"),d.getString("level"),
@@ -205,15 +214,16 @@ public class MongoDbConnector {
         return null;
     }
 
-    public void searchUsers(List<Bson> filters){
+    public String searchUsers(List<Bson> filters){
         ArrayList<Document> docs = new ArrayList<>();
         users.aggregate(filters).into(docs);
         if(docs.size()==0)
             System.out.println("Results not found");
         else {
             printUsers(docs);
-            selectUser(docs);
+            return selectUser(docs);
         }
+        return null;
     }
 
     public Document selectExercise(ArrayList<Document> docs, boolean print){
@@ -265,7 +275,7 @@ public class MongoDbConnector {
         }
     }
 
-    public void selectUser(ArrayList<Document> docs){
+    public String selectUser(ArrayList<Document> docs){
         String input;
         while (true) {
             System.out.println("Press the number of the user you want to select\n" +
@@ -282,10 +292,10 @@ public class MongoDbConnector {
         }
         switch (input) {
             case "0":
-                return;
+                return null;
             default:
                 String id = docs.get(Integer.parseInt(input)-1).getString("user_id");
-                showUserDetails(id);
+                return showUserDetails(id);
         }
     }
 
@@ -406,9 +416,9 @@ public class MongoDbConnector {
         Document doc = workout.aggregate(Arrays.asList(match,proj)).first();
 
         while(true){
-            System.out.println("--------------------------------------------------------------------------------------------------------");
+            System.out.println("------------------------------------------------------------------------------------------------------------");
             System.out.println("ROUTINE DETAILS");
-            System.out.println("--------------------------------------------------------------------------------------------------------");
+            System.out.println("------------------------------------------------------------------------------------------------------------");
 
             System.out.print("trainer: " + doc.getString("trainer")+"\t");
             System.out.print("level: " + doc.getString("level")+"\n");
@@ -482,9 +492,9 @@ public class MongoDbConnector {
             String input = sc.next();
             switch (input) {
                 case "1":
-                    return "follow";
+                    return "f:"+id;
                 case "2":
-                    return "unfollow;";
+                    return "u:"+id;
                 default: return null;
             }
         }
