@@ -56,11 +56,13 @@ public class WeFit {
         user = mongoDb.signIn(email, password);
 
         if (user != null && user.getString("trainer").equals("no")) {
+            mongoDb.setUser(user.getString("user_id"));
             UserManager uM = new UserManager(user, mongoDb);
             if(uM.session()==false)
                 exit(1);
         }
         else if(user != null && user.getString("trainer").equals("yes")) {
+            mongoDb.setUser(user.getString("user_id"));
             TrainerManager tM = new TrainerManager(user, mongoDb);
             if(tM.sessionTrainer()==false)
                 exit(1);

@@ -9,6 +9,8 @@ import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
 
 import java.awt.image.AreaAveragingScaleFilter;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -36,6 +38,8 @@ public class MongoDbConnector {
 
     static MongoCollection<Document> workout;
     static MongoCollection<Document> users;
+
+    String user;
 
     public MongoDbConnector(String conn, String db_name){
         uri = new ConnectionString(conn);
@@ -118,10 +122,20 @@ public class MongoDbConnector {
         return user.getString("user_id");
     }
 
-    public void insertComment(Document comment, String id){
-        Bson filter = eq("_id", id);
+    public void insertComment(String id){
+        Document comment = new Document();
+        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+        String input = null;
+        try {
+            System.out.println("Insert the comment you want to add...");
+            input = bufferRead.readLine();
+        } catch (IOException e) { e.printStackTrace();}
+        comment.append("Comment", input).append("Time", LocalDate.now()).append("user", user);
+
+        Bson filter = eq("_id", new ObjectId(id));
         Bson change = push("comments", comment);
         workout.updateOne(filter, change);
+        System.out.println("Success! Your comment has been inserted.");
     }
 
     public void insertRoutine(Document routine){
@@ -133,32 +147,29 @@ public class MongoDbConnector {
         }
     }
 
-    public void insertVote(String id, int vote){
-        Bson filter = eq("_id", id);
-        int score, nVotes;
-        String score_string = null;
-        String nVotes_string = null;
-        try (MongoCursor<Document> cursor = workout.find().iterator())
-        {
-            while (cursor.hasNext())
-            {
-                nVotes_string = cursor.next().getString("num_votes");
-                score_string = cursor.next().getString("vote");
-            }
-        }
+    public void insertVote(String id){
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Please insert your vote...");
+        int vote = Integer.parseInt(sc.next());
 
-        if(score_string == null || nVotes_string == null){
-            System.out.println("Couldn't add your vote...");
-            return;
-        }
+        double score;
+        int nVotes;
+        Document routine = workout.find(eq("_id", new ObjectId(id))).first();
 
-        score = Integer.parseInt(score_string);
-        nVotes = Integer.parseInt(nVotes_string);
-        score = ((score*nVotes)+vote)/(nVotes+1);
+        score = routine.getDouble("vote");
+        nVotes = routine.getInteger("num_votes");
+
+        System.out.println(nVotes + " " + score);
+
+        BigDecimal bd = new BigDecimal(((score*nVotes)+vote)/(nVotes+1)).setScale(2, RoundingMode.HALF_UP);
         nVotes = nVotes+1;
+        score = bd.doubleValue();
 
-        workout.updateOne(eq("_id", id), set("vote", score));
-        workout.updateOne(eq("_id", id), set("num_votes", nVotes));
+        System.out.println(nVotes + " " + score);
+
+        workout.updateOne(eq("_id", new ObjectId(id)), set("vote", score));
+        workout.updateOne(eq("_id", new ObjectId(id)), set("num_votes", nVotes));
+        System.out.println("Success! Your comment has been inserted.");
     }
 
     public void printExercises(ArrayList<Document> docs){
@@ -288,6 +299,10 @@ public class MongoDbConnector {
                 String id = docs.get(Integer.parseInt(input)-1).getString("user_id");
                 showUserDetails(id);
         }
+    }
+
+    public void setUser(String u){
+        user = u;
     }
 
     public Document signIn(String username, String password) {
@@ -445,15 +460,14 @@ public class MongoDbConnector {
                     continue;
                 }
                 case "2":
-                    //comment();
-                    break;
+                    insertComment(id);
+                    return;
                 case "3":
-                    //vote();
-                    break;
+                    insertVote(id);
+                    return;
                 default: return;
             }
         }
-
     }
 
     public String showUserDetails(String id){
@@ -492,10 +506,4 @@ public class MongoDbConnector {
         }
 
     }
-
-
-
 }
-
-//Judith_Eyres718285046@liret.org
-//3eYZcK8f

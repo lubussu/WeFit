@@ -18,8 +18,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
-import static com.mongodb.client.model.Aggregates.match;
-import static com.mongodb.client.model.Aggregates.project;
+import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.exclude;
 import static com.mongodb.client.model.Projections.fields;
@@ -46,7 +45,7 @@ public class UserManager {
             input = bufferRead.readLine();
         } catch (IOException e) { e.printStackTrace();}
         comment.append("Comment", input).append("Time", LocalDate.now()).append("user", self.getString("user_id"));
-        mongoDb.insertComment(comment, id);
+        //mongoDb.insertComment(comment, id);
     }
 
     public void addVote(String id){
@@ -54,7 +53,7 @@ public class UserManager {
         System.out.println("Please insert your vote...");
         String vote_string = sc.next();
         int vote = Integer.parseInt(vote_string);
-        mongoDb.insertVote(id, vote);
+       // mongoDb.insertVote(id, vote);
     }
 
     public void changeProfile(){
@@ -509,22 +508,26 @@ public class UserManager {
                 "soon one of our trainer will contact you to assign a training level\n" +
                 "and build a personal routine with you!\n" +
                 "We hope your stay here will be a pleasurable one!\n");
+        mongoDb.setUser(self.getString("user_id"));
         if (session()==false)
             return false;
         return true;
     }
 
     public void showCurrentRoutine(){
-        mongoDb.showCurrentRoutine(self.getString("user_id"));
+        //mongoDb.showCurrentRoutine(self.getString("user_id"));
+        String routine = neo4j.showRoutines(self.getString("user_id"), "current");
+        if(routine!=null)
+            mongoDb.showRoutineDetails(routine);
     }
 
     public void showFollowedUsers(){
         String ret = neo4j.showFollowedUsers(self.getString("user_id"));
         if(ret==null)
             return;
-        if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users
+        if(ret.startsWith("r:")) //the user want to see routine details of one of followed users
             mongoDb.showRoutineDetails(ret.substring(2));
-        }
+
         else{ // the user want to see details of one user
             String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
             if(option==null)
@@ -536,5 +539,11 @@ public class UserManager {
         }
     }
 
-    public void showPastRoutines(){ mongoDb.showPastRoutines(self.getString("user_id"));}
+    public void showPastRoutines(){
+        //mongoDb.showPastRoutines(self.getString("user_id"));}
+        String routine = neo4j.showRoutines(self.getString("user_id"), "current");
+        if(routine!=null)
+            mongoDb.showRoutineDetails(routine);
+    }
+
 }

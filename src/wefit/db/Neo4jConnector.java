@@ -10,6 +10,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.internal.InternalPath;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -48,8 +49,8 @@ public class Neo4jConnector {
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
-            System.out.printf("%3s %10s %15s %15s %15s", (i+1)+") ", r.get("routine").get("trainer"),r.get("routine").get("level"),
-                    r.get("routine").get("starting_day"),r.get("routine").get("end_day"));
+            System.out.printf("%3s %10s %15s %15s %15s", (i+1)+") ", r.get("routine").get("trainer").toString().replace("\"",""),r.get("routine").get("level").toString().replace("\"",""),
+                    r.get("routine").get("starting_day").toString().replace("\"",""),r.get("routine").get("end_day").toString().replace("\"",""));
             System.out.println("\n");
         }
     }
@@ -59,8 +60,9 @@ public class Neo4jConnector {
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
-            System.out.printf("%3s %10s %20s %10s %15s %15s %10s", (i+1)+") ", r.get("user").get("user_id"),r.get("user").get("name"),
-                    r.get("user").get("gender"),r.get("user").get("birth"),r.get("user").get("level"),r.get("user").get("trainer"));
+            System.out.printf("%3s %10s %20s %10s %15s %15s %10s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
+                    r.get("user").get("gender").toString().replace("\"",""), r.get("user").get("birth").toString().replace("\"",""),
+                    r.get("user").get("level").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""));
             System.out.println("\n");
         }
     }
@@ -102,22 +104,33 @@ public class Neo4jConnector {
                     switch (input){
                         case "1":
                             return "u:"+id.replace("\"","");
-                        case"2":
-                            return "r:"+showRoutines(id.replace("\"",""));
+                        case"2": {
+                            String routine = showRoutines(id.replace("\"", ""), "all");
+                            if(routine != null)
+                                return "r:" + routine;
+                        }
                     }
             }
         };
         return null;
     }
 
-    public String showRoutines(String user){
+    public String showRoutines(String user, String period){
         ArrayList<Record> followed = new ArrayList<>();
         try ( Session session = graph_driver.session() ) {
             followed = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
-                List<Record> persons;
-                persons = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user RETURN b AS routine",parameters("user",user)).list();
+                List<Record> routines;
+                String c_day = LocalDate.now().toString();
+                if(period.equals("all"))
+                    routines = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user RETURN b AS routine",parameters("user",user)).list();
+                else if(period.equals("past"))
+                    routines = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user AND b.end_day < $date RETURN b AS routine",
+                            parameters("user",user, "date", c_day)).list();
+                else
+                    routines = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user AND b.end_day >= $date RETURN b AS routine",
+                            parameters("user",user, "date", c_day)).list();
                 ArrayList<Record> results = new ArrayList<>();
-                return persons;
+                return routines;
             });
         };
         printRoutines(followed);
