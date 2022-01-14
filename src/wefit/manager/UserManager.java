@@ -36,7 +36,7 @@ public class UserManager {
         this.neo4j = neo4j = new Neo4jConnector("bolt://localhost:7687", "neo4j", "wefit" );
     }
 
-    public void addComment(String id){
+    public void addComment(String routine_id){
         Document comment = new Document();
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         String input = null;
@@ -47,17 +47,18 @@ public class UserManager {
                 return;
         } catch (IOException e) { e.printStackTrace();}
         comment.append("Comment", input).append("Time", LocalDate.now()).append("user", self.getString("user_id"));
-        mongoDb.insertComment(comment, id);
+        mongoDb.insertComment(comment, routine_id);
     }
 
-    public void addVote(String id){
+    public void addVote(String routine_id){
         Scanner sc = new Scanner(System.in);
         System.out.println("Please insert your vote or press r to return...");
         String vote_string = sc.next();
         if(vote_string.equals("r"))
             return;
         int vote = Integer.parseInt(vote_string);
-        mongoDb.insertVote(id, vote);
+        mongoDb.insertVote(routine_id, vote);
+        neo4j.insertVote(self.getString("athlete_id"), routine_id, vote);
     }
 
     public void changeProfile(Document user){
@@ -447,6 +448,14 @@ public class UserManager {
                     System.out.println("Please select an existing option!\n");
             }
         }
+    }
+
+    public void followRecommended(String id){
+        System.out.println("Insert the ID of the user you want to follow...");
+        Scanner sc = new Scanner(System.in);
+        String input;
+        input = sc.next();
+        neo4j.followUser(id, input);
     }
 
     public boolean session(){

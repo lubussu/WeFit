@@ -140,10 +140,10 @@ public class MongoDbConnector {
         }
     }
 
-    public void insertVote(String id, int vote){
+    public void insertVote(String routine_id, int vote){
         double score;
         int nVotes;
-        Document routine = workout.find(eq("_id", new ObjectId(id))).first();
+        Document routine = workout.find(eq("_id", new ObjectId(routine_id))).first();
 
         score = routine.getDouble("vote");
         nVotes = routine.getInteger("num_votes");
@@ -156,8 +156,8 @@ public class MongoDbConnector {
 
         System.out.println(nVotes + " " + score);
 
-        workout.updateOne(eq("_id", new ObjectId(id)), set("vote", score));
-        workout.updateOne(eq("_id", new ObjectId(id)), set("num_votes", nVotes));
+        workout.updateOne(eq("_id", new ObjectId(routine_id)), set("vote", score));
+        workout.updateOne(eq("_id", new ObjectId(routine_id)), set("num_votes", nVotes));
         System.out.println("Success! Your comment has been inserted.");
     }
 
