@@ -25,6 +25,7 @@ public class TrainerManager extends UserManager{
         super(trainer, mongo);
     }
 
+    //change a user from normal user to trainer
     public void addTrainer(){
         System.out.println("Insert the name or the user_id of the user you want to promote or press r to return..");
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
@@ -71,7 +72,7 @@ public class TrainerManager extends UserManager{
         int n = 0;
 
         // cycle all the 17 muscle groups to insert one exercise each
-        while(n<1){
+        while(n<17){
             exercises.add(insertExercise(Muscles[n],null));
             n++;
         }
@@ -129,6 +130,7 @@ public class TrainerManager extends UserManager{
         neo4j.insertRoutine(new_routine);
     }
 
+    //function for insert an exercise in a new routine
     public Document insertExercise(String muscle, String type){
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         Scanner sc = new Scanner(System.in);
@@ -143,7 +145,7 @@ public class TrainerManager extends UserManager{
                 fetch = bufferRead.readLine();
             } catch (IOException e) {e.printStackTrace();}
 
-            ex = mongoDb.showExercises(fetch, false, muscle, type);
+            ex = mongoDb.searchExercises(fetch, false, muscle, type);
             if(ex!=null)
                 break;
         }

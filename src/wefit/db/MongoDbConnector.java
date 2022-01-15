@@ -39,8 +39,6 @@ public class MongoDbConnector {
     private MongoCollection<Document> workout;
     private MongoCollection<Document> users;
 
-    String user;
-
     public MongoDbConnector(String conn, String db_name){
         uri = new ConnectionString(conn);
         myClient = MongoClients.create(uri);
@@ -50,6 +48,7 @@ public class MongoDbConnector {
         users = db.getCollection("users");
     }
 
+    //function for change profile's properties in the db
     public void changeProfile(Document user){
         try {
             DeleteResult result = users.deleteOne(eq("user_id", user.getString("user_id")));
@@ -97,6 +96,7 @@ public class MongoDbConnector {
         return null;
     }
 
+    //function to get a user by the name
     public Document getUser(String name){ //restituisce l'id dell'utente cercato, se più di uno stampa gli id e fa scegliere
         Bson name_filter = regex("name", ".*"+name+".*", "i");
 
@@ -124,6 +124,7 @@ public class MongoDbConnector {
         return user;
     }
 
+    //function to insert a comment in the db
     public void insertComment(Document comment, String id){
         Bson filter = eq("_id", new ObjectId(id));
         Bson change = push("comments", comment);
@@ -131,6 +132,7 @@ public class MongoDbConnector {
         System.out.println("Success! Your comment has been inserted.");
     }
 
+    //function to insert a routine in the db
     public void insertRoutine(Document routine){
         try {
             InsertOneResult result = workout.insertOne(routine);
@@ -140,6 +142,7 @@ public class MongoDbConnector {
         }
     }
 
+    //function to insert a vote in the db
     public void insertVote(String routine_id, int vote){
         double score;
         int nVotes;
@@ -161,6 +164,7 @@ public class MongoDbConnector {
         System.out.println("Success! Your comment has been inserted.");
     }
 
+    //function to get the user_id of the last user (to insert a new user)
     public int lastUser(){
         int last_user =  users.find(ne("last_user", null)).first().getInteger("last_user");
         last_user ++;
@@ -168,6 +172,7 @@ public class MongoDbConnector {
         return last_user;
     }
 
+    //function for print summary information of the given exercises
     public void printExercises(ArrayList<Document> docs){
         System.out.printf("%3s %50s %20s %15s %15s", "   ", "Name", "Muscle Targeted", "Equipment", "Type\n");
         System.out.println("------------------------------------------------------------------------------------------------------------");
@@ -179,6 +184,7 @@ public class MongoDbConnector {
         }
     }
 
+    //function for print summary information of the given routines
     private void printRoutines(ArrayList<Document> docs) {
         System.out.printf("%3s %10s %15s %15s %15s", "   ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("------------------------------------------------------------------------------------------------------------");
@@ -190,6 +196,7 @@ public class MongoDbConnector {
         }
     }
 
+    //function for print summary information of the given users
     public void printUsers(ArrayList<Document> docs) {
         System.out.printf("%3s %10s %20s %10s %15s %15s %10s", "   ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -201,6 +208,31 @@ public class MongoDbConnector {
         }
     }
 
+    //function for search exercise(s) using the given filters
+    public Document searchExercises(String ex, boolean print, String muscle, String type){
+        ArrayList<Bson> filters = new ArrayList<>();
+        filters.add(match(regex("name", ".*"+ex+".*", "i")));
+
+        if(muscle != null)
+            filters.add(match(eq("muscle_targeted", muscle)));
+
+        if(type != null)
+            filters.add(match(eq("type", type)));
+        else
+            filters.add(match(ne("type",null)));
+
+        ArrayList<Document> docs = new ArrayList<>();
+        workout.aggregate(filters).into(docs);
+        if(docs.size()==0){
+            System.out.println("Exercise not found\n");
+            return null;
+        }
+
+        printExercises(docs);
+        return selectExercise(docs, print);
+    }
+
+    //function for search routine(s) using the given filters
     public String searchRoutines(List<Bson> filters){
         ArrayList<Document> docs = new ArrayList<>();
         filters.add(match(ne("user",null)));
@@ -214,6 +246,7 @@ public class MongoDbConnector {
         return null;
     }
 
+    //function for search user(s) using the given filters
     public String searchUsers(List<Bson> filters){
         ArrayList<Document> docs = new ArrayList<>();
         users.aggregate(filters).into(docs);
@@ -226,6 +259,7 @@ public class MongoDbConnector {
         return null;
     }
 
+    //function to select an exercise from given exercises
     public Document selectExercise(ArrayList<Document> docs, boolean print){
         String input;
         while (true) {
@@ -251,6 +285,7 @@ public class MongoDbConnector {
         }
     }
 
+    //function to select a routine from given routines
     public String selectRoutine(ArrayList<Document> docs){
         String input;
         while (true) {
@@ -275,6 +310,7 @@ public class MongoDbConnector {
         }
     }
 
+    //function to select a user from given users
     public String selectUser(ArrayList<Document> docs){
         String input;
         while (true) {
@@ -299,15 +335,13 @@ public class MongoDbConnector {
         }
     }
 
-    public void setUser(String u){
-        user = u;
-    }
-
+    //function for signIn in the app (search credentials in the db)
     public Document signIn(String username, String password) {
         Document doc = users.find(and(eq("email",username),eq("password",password))).first();
         return doc;
     }
 
+    //function for signUp in the app (insert new user in the db)
     public void signUp(Document user){
         try {
             InsertOneResult result = users.insertOne(user);
@@ -316,78 +350,8 @@ public class MongoDbConnector {
             System.err.println("Unable to insert due to an error: " + me);
         }
     }
-/*
-    public void showCurrentRoutine(String user){
-        String c_day = LocalDate.now().toString();
-        Bson match = match(and(eq("user",user),gt("end_day",c_day)));
-        Bson proj = project(fields(exclude("user","warm_up","exercises","stretching")));
 
-        Document r = workout.aggregate(Arrays.asList(match,proj)).first();
-
-        if(r==null)
-            System.out.println("you don't have current routines");
-        else {
-            ArrayList<Document> docs = new ArrayList<>();
-            docs.add(r);
-            printRoutines(docs);
-            //vedi dettagli
-
-            System.out.println("Press 1 to select the routine\n" +
-                    "or press any key to return to the main menu");
-
-            Scanner sc = new Scanner(System.in);
-            String input = sc.next();
-            switch (input) {
-                case "1":
-                    String id = r.getObjectId("_id").toString();
-                    showRoutineDetails(id);
-                    return;
-                default:
-                    return;
-            }
-        }
-
-    }*/
-
-    public Document showExercises(String ex, boolean print, String muscle, String type){
-        ArrayList<Bson> filters = new ArrayList<>();
-        filters.add(match(regex("name", ".*"+ex+".*", "i")));
-
-
-        if(muscle != null)
-            filters.add(match(eq("muscle_targeted", muscle)));
-
-        if(type != null)
-            filters.add(match(eq("type", type)));
-        else
-            filters.add(match(ne("type",null)));
-
-        ArrayList<Document> docs = new ArrayList<>();
-        workout.aggregate(filters).into(docs);
-        if(docs.size()==0){
-            System.out.println("Exercise not found\n");
-            return null;
-        }
-
-        printExercises(docs);
-        return selectExercise(docs, print);
-    }
-/*
-    public void showPastRoutines(String user){
-        String c_day = LocalDate.now().toString();
-        Bson match = match(and(eq("user",user),lt("end_day",c_day)));
-        Bson proj = project(exclude("user","warm_up","exercises","stretching"));
-
-        ArrayList<Document> docs = new ArrayList<>();
-        workout.aggregate(Arrays.asList(match,proj)).into(docs);
-        if(docs.size()==0)
-            System.out.println("you don't have past routines");
-        else {
-            printRoutines(docs);
-            selectRoutine(docs);
-        }
-    }*/
-
+    //function for print all information of the given exercise
     public Document showExercisesDetails(Document doc){
         System.out.println("--------------------------------------------------------------------------------------------------------");
         System.out.print("EXERCISE:\t"+doc.getString("name")+"\n");
@@ -410,6 +374,7 @@ public class MongoDbConnector {
         return doc;
     }
 
+    //function for print all information of the given routine
     public String showRoutineDetails(String id){
         Bson match = match(eq("_id",new ObjectId(id)));
         Bson proj = project(fields(excludeId(), exclude("user","comments")));
@@ -452,7 +417,7 @@ public class MongoDbConnector {
                     try {
                         exercise = bufferRead.readLine();
                     } catch (IOException e) { e.printStackTrace();}
-                    showExercises(exercise, true,null, null);
+                    searchExercises(exercise, true,null, null);
                     continue;
                 }
                 case "2":
@@ -464,6 +429,7 @@ public class MongoDbConnector {
         }
     }
 
+    //function for print all information of the given user
     public String showUserDetails(String id){
         Document doc = users.find(eq("user_id", id)).first();
         if(doc==null){
@@ -500,4 +466,52 @@ public class MongoDbConnector {
         }
 
     }
+
+    /*
+    public void showCurrentRoutine(String user){
+        String c_day = LocalDate.now().toString();
+        Bson match = match(and(eq("user",user),gt("end_day",c_day)));
+        Bson proj = project(fields(exclude("user","warm_up","exercises","stretching")));
+
+        Document r = workout.aggregate(Arrays.asList(match,proj)).first();
+
+        if(r==null)
+            System.out.println("you don't have current routines");
+        else {
+            ArrayList<Document> docs = new ArrayList<>();
+            docs.add(r);
+            printRoutines(docs);
+            //vedi dettagli
+
+            System.out.println("Press 1 to select the routine\n" +
+                    "or press any key to return to the main menu");
+
+            Scanner sc = new Scanner(System.in);
+            String input = sc.next();
+            switch (input) {
+                case "1":
+                    String id = r.getObjectId("_id").toString();
+                    showRoutineDetails(id);
+                    return;
+                default:
+                    return;
+            }
+        }
+
+    }
+
+    public void showPastRoutines(String user){
+        String c_day = LocalDate.now().toString();
+        Bson match = match(and(eq("user",user),lt("end_day",c_day)));
+        Bson proj = project(exclude("user","warm_up","exercises","stretching"));
+
+        ArrayList<Document> docs = new ArrayList<>();
+        workout.aggregate(Arrays.asList(match,proj)).into(docs);
+        if(docs.size()==0)
+            System.out.println("you don't have past routines");
+        else {
+            printRoutines(docs);
+            selectRoutine(docs);
+        }
+    }*/
 }

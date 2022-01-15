@@ -36,6 +36,7 @@ public class UserManager {
         this.neo4j = neo4j = new Neo4jConnector("bolt://localhost:7687", "neo4j", "wefit" );
     }
 
+    //function for comment a routine
     public void addComment(String routine_id){
         Document comment = new Document();
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
@@ -50,6 +51,7 @@ public class UserManager {
         mongoDb.insertComment(comment, routine_id);
     }
 
+    //function for vote a routine
     public void addVote(String routine_id){
         Scanner sc = new Scanner(System.in);
         System.out.println("Please insert your vote or press r to return...");
@@ -61,6 +63,7 @@ public class UserManager {
         neo4j.insertVote(self.getString("athlete_id"), routine_id, vote);
     }
 
+    //function for change profile's properties
     public void changeProfile(Document user){
         System.out.println("1) Name: " + self.getString("name"));
         System.out.println("2) Gender: " + self.getString("gender"));
@@ -172,6 +175,7 @@ public class UserManager {
         }
     }
 
+    //function for set filters for search routine(s)
     public void findRoutine(){
         System.out.println("\nInsert filters for find a routine..");
         System.out.println("1) User");
@@ -286,6 +290,7 @@ public class UserManager {
         }
     }
 
+    //function for set filters for search user(s)
     public void findUser(){
         System.out.println("\nInsert filters for find a user..");
         System.out.println("1) User_id");
@@ -509,6 +514,7 @@ public class UserManager {
         return true;
     }
 
+    //function for signup to the app
     public boolean signUp() throws IOException {
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         String name, gender, yob, height, weight, training, bg, exp, email, password, level;
@@ -575,7 +581,6 @@ public class UserManager {
                 "soon one of our trainer will contact you to assign a training level\n" +
                 "and build a personal routine with you!\n" +
                 "We hope your stay here will be a pleasurable one!\n");
-        mongoDb.setUser(self.getString("user_id"));
         if (session()==false)
             return false; //exit the application
         return true;

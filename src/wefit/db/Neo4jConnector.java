@@ -34,6 +34,7 @@ public class Neo4jConnector {
         graph_driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
     }
 
+    //function for change profile's properties in the db
     public void changeProfile(Document user){
         try ( Session session = graph_driver.session() ) {
             session.run("MATCH (a:User) WHERE a.user_id = $user "+
@@ -44,6 +45,7 @@ public class Neo4jConnector {
         };
     }
 
+    //function for follow a user (add relation in the db)
     public void followUser(String user, String followed){
         try ( Session session = graph_driver.session() ) {
             session.run("MATCH (a:User) MATCH (b:User) " +
@@ -54,6 +56,7 @@ public class Neo4jConnector {
         System.out.println("User " + user +" successfully follow!");
     }
 
+    //function for vote a routine (add relation in the db)
     public void insertVote(String user_id, String routine_id, int vote){
         try ( Session session = graph_driver.session() ) {
             session.run("MATCH (a:User) MATCH (b:Routine) " +
@@ -64,6 +67,7 @@ public class Neo4jConnector {
         System.out.println("Routine voted successfully!");
     }
 
+    //function for add a new user (add a node in the db)
     public void insertUser(Document user) {
         try ( Session session = graph_driver.session() )
         {
@@ -73,6 +77,7 @@ public class Neo4jConnector {
         };
     }
 
+    //function for add a new routine (add a node in the db)
     public void insertRoutine(Document routine) {
         try ( Session session = graph_driver.session() )
         {
@@ -84,6 +89,7 @@ public class Neo4jConnector {
         };
     }
 
+    //function for print summary information of the given routines
     public void printRoutines(ArrayList<Record> rec){
         System.out.printf("%3s %10s %15s %15s %15s", "   ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -95,6 +101,7 @@ public class Neo4jConnector {
         }
     }
 
+    //function for print summary information of the given users
     public void printUsers(ArrayList<Record> rec) {
         System.out.printf("%3s %10s %20s %10s %15s %15s %10s", "   ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -107,6 +114,7 @@ public class Neo4jConnector {
         }
     }
 
+    //function for retry the list of followed users (and select one of them)
     public String showFollowedUsers(String user){
         try ( Session session = graph_driver.session() ) {
             ArrayList<Record> followed = (ArrayList<Record>) session.readTransaction(tx-> {
@@ -194,6 +202,7 @@ public class Neo4jConnector {
         }
     }
 
+    //function to show all the routines (past or current) of the given user
     public String showRoutines(String user, String period){
         ArrayList<Record> followed = new ArrayList<>();
         try ( Session session = graph_driver.session() ) {
@@ -236,6 +245,7 @@ public class Neo4jConnector {
         }
     }
 
+    //function for unfollow a user (add relation in the db)
     public void unfollowUser(String user, String followed){
         try ( Session session = graph_driver.session() ) {
             session.run("MATCH (a:User)-[f:FOLLOW]->(b:User) " +
