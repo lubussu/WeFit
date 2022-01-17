@@ -208,4 +208,14 @@ public class TrainerManager extends UserManager{
         return true;
     }
 
+    public void showAvgAgeLvl(){
+        String threshold;
+
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Insert maximum threshold for the age...");
+        threshold = sc.next();
+
+        mongoDb.showAvgAgeLvl(threshold);
+    }
+
 }

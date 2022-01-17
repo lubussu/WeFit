@@ -4,9 +4,16 @@ import com.mongodb.ConnectionString;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.client.*;
+import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.BsonField;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.Document;
+import static com.mongodb.client.model.Sorts.ascending;
 
 import java.awt.image.AreaAveragingScaleFilter;
 import java.math.BigDecimal;
@@ -16,7 +23,9 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
+import static com.mongodb.client.model.Accumulators.avg;
 import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Sorts.descending;
 import static com.mongodb.client.model.Updates.*;
 import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Accumulators.sum;
@@ -349,6 +358,21 @@ public class MongoDbConnector {
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
         }
+    }
+
+    public void showAvgAgeLvl(String threshold){
+        List<Bson> avg_pipeline = Arrays.asList(group("$level", Accumulators.avg("Avg", eq("$toInt", "$year_of_birth"))));
+        AggregateIterable<Document> avg_result = users.aggregate(avg_pipeline);
+        System.out.println("These are the average ages per level of the users:");
+        avg_result.forEach(document -> System.out.println("Level: " + document.getString("_id") + " Average Age: " + String.valueOf(LocalDate.now().getYear() - Math.round(document.getDouble("Avg")))));
+
+        Bson match = match(gte("year_of_birth", threshold));
+        Bson group = group("$level", sum("count", 1));
+        Bson sort = sort(descending("count"));
+        List<Bson> count_pipeline = Arrays.asList(match, group, sort);
+        AggregateIterable<Document> count_result = users.aggregate(count_pipeline);
+        System.out.println("\nThis is the level with most users with age in the specified range:");
+        System.out.println("Level: " + count_result.first().getString("_id") + " count: " + String.valueOf(count_result.first().getInteger("count")) + "\n");
     }
 
     //function for print all information of the given exercise
