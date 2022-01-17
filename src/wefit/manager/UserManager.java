@@ -471,12 +471,13 @@ public class UserManager {
                     "1) See your current routine\n" +
                     "2) See your past routines\n" +
                     "3) See your followed list\n" +
-                    "4) See routines you commented\n" +
-                    "5) Find a routine by parameter\n" +
-                    "6) Find a user by parameter\n" +
-                    "7) Modify your profile\n" +
-                    "8) Log out\n" +
-                    "9) Exit");
+                    "4) See your followers list\n" +
+                    "5) See routines you commented\n" +
+                    "6) Find a routine by parameter\n" +
+                    "7) Find a user by parameter\n" +
+                    "8) Modify your profile\n" +
+                    "9) Log out\n" +
+                    "0) Exit");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -490,21 +491,24 @@ public class UserManager {
                     showFollowedUsers();
                     break;
                 case "4":
-                    System.out.println("You have not yet commented any routine...\n");
+                    showFollowers();
                     break;
                 case "5":
-                    findRoutine();
+                    System.out.println("You have not yet commented any routine...\n");
                     break;
                 case "6":
-                    findUser();
+                    findRoutine();
                     break;
                 case "7":
-                    changeProfile(self);
+                    findUser();
                     break;
                 case "8":
-                    running = false;
+                    changeProfile(self);
                     break;
                 case "9":
+                    running = false;
+                    break;
+                case "0":
                     return false;
                 default:
                     System.out.println("Please select an existing option!\n");
@@ -601,7 +605,35 @@ public class UserManager {
     }
 
     public void showFollowedUsers(){
-        String ret = neo4j.showFollowedUsers(self.getString("user_id"));
+        String ret = neo4j.showFollowUsers(self.getString("user_id"), "followed");
+        if(ret==null)
+            return;
+        if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users
+            String option = mongoDb.showRoutineDetails(ret.substring(2));
+            if(option==null)
+                return;
+            else if(option.startsWith("c:"))
+                addComment(ret.substring(2));
+            else if(option.startsWith("v:"))
+                addVote(ret.substring(2));
+        }
+
+        else if(ret.startsWith("u:")){ // the user want to see details of one user
+            System.out.println("else");
+            String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
+            System.out.println(option);
+            if(option==null)
+                return;
+
+            if(option.startsWith("u:")) {
+                System.out.println("unfollow");
+                neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
+            }
+        }
+    }
+
+    public void showFollowers(){
+        String ret = neo4j.showFollowUsers(self.getString("user_id"), "followers");
         if(ret==null)
             return;
         if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users

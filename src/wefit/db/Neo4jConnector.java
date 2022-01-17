@@ -91,7 +91,7 @@ public class Neo4jConnector {
 
     //function for print summary information of the given routines
     public void printRoutines(ArrayList<Record> rec){
-        System.out.printf("%3s %10s %15s %15s %15s", "   ", "Trainer", "Level", "Starting day", "End day\n");
+        System.out.printf("%5s %10s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
@@ -103,7 +103,7 @@ public class Neo4jConnector {
 
     //function for print summary information of the given users
     public void printUsers(ArrayList<Record> rec) {
-        System.out.printf("%3s %10s %20s %10s %15s %15s %10s", "   ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
+        System.out.printf("%5s %10s %20s %10s %15s %15s %10s", "     ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
@@ -113,78 +113,87 @@ public class Neo4jConnector {
             System.out.println("\n");
         }
     }
+    
+    //function to select a user from given users
+    public String selectUser(ArrayList<Record> users){
+        String input;
+        while (true) {
+            System.out.println("Press the number of the user you want to select\n" +
+                    "or press 0 to return to the main menu");
 
-    //function for retry the list of followed users (and select one of them)
-    public String showFollowedUsers(String user){
-        try ( Session session = graph_driver.session() ) {
-            ArrayList<Record> followed = (ArrayList<Record>) session.readTransaction(tx-> {
-                List<Record> persons;
-                persons = tx.run("MATCH (a:User) -[:FOLLOW]->(b:User) WHERE a.user_id = $user RETURN b AS user",
-                        parameters("user",user)).list();
-                return persons;
-            });
-            printUsers(followed);
-
-            String input;
-            while (true) {
-                System.out.println("Press the number of the user you want to select\n" +
-                        "or press 0 to return to the main menu");
+            Scanner sc = new Scanner(System.in);
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > users.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return null;
+            default:
+                String id = users.get(Integer.parseInt(input)-1).get("user").get("user_id").toString();
+                String trainer = users.get(Integer.parseInt(input)-1).get("user").get("trainer").toString().replace("\"", "");
+                System.out.println("Press 1 to see user's details\n"+
+                        "or press 2 to see user's routines");
 
                 Scanner sc = new Scanner(System.in);
                 input = sc.next();
-                if (!input.matches("[0-9.]+"))
-                    System.out.println("Please select an existing option!");
-                else if ((Integer.parseInt(input)) > followed.size())
-                    System.out.println("Please select an existing option!\n");
-                else
-                    break;
-            }
-            switch (input) {
-                case "0":
-                    return null;
-                default:
-                    String id = followed.get(Integer.parseInt(input)-1).get("user").get("user_id").toString();
-                    String trainer = followed.get(Integer.parseInt(input)-1).get("user").get("trainer").toString();
-                    System.out.println("Press 1 to see user's details\n"+
-                                        "or press 2 to see user's routines");
+                switch (input){
+                    case "1":
+                        return "u:"+id.replace("\"","");
+                    case"2": {
+                        if (trainer.equals("yes")){
+                            System.out.println("Press 1 to see own routines\n"+
+                                    "or press 2 to see routine's created");
 
-                    Scanner sc = new Scanner(System.in);
-                    input = sc.next();
-                    switch (input){
-                        case "1":
-                            return "u:"+id.replace("\"","");
-                        case"2": {
-                            if (trainer.equals("yes")){
-                                System.out.println("Press 1 to see routine's for him\n"+
-                                        "or press 2 to see routine's created by him");
-
-                                input = sc.next();
-                                String routine=null;
-                                switch (input){
-                                    case "1":
-                                        routine = showRoutines(id.replace("\"", ""), "all");
-                                        if (routine != null)
-                                            return "r:" + routine;
-                                        System.out.println("Result not found");
-                                        break;
-                                    case "2":
-                                        //routine = showTrainerRoutines(id.replace("\"", ""), "all"); ---> DA FARE
-                                        if (routine != null)
-                                            return "r:" + routine;
-                                        System.out.println("Result not found");
-                                        break;
-                                }
-                            }
-                            else {
-                                String routine = showRoutines(id.replace("\"", ""), "all");
-                                if (routine != null)
-                                    return "r:" + routine;
+                            input = sc.next();
+                            String routine=null;
+                            switch (input){
+                                case "1":
+                                    routine = showRoutines(id.replace("\"", ""), "all");
+                                    if (routine != null)
+                                        return "r:" + routine;
+                                    System.out.println("Result not found");
+                                    break;
+                                case "2":
+                                    //routine = showTrainerRoutines(id.replace("\"", ""), "all"); ---> DA FARE
+                                    if (routine != null)
+                                        return "r:" + routine;
+                                    System.out.println("Result not found");
+                                    break;
                             }
                         }
+                        else {
+                            String routine = showRoutines(id.replace("\"", ""), "all");
+                            if (routine != null)
+                                return "r:" + routine;
+                        }
                     }
-            }
-        };
+                }
+        }
         return null;
+    }
+
+    //function for retry the list of followed users (and select one of them)
+    public String showFollowUsers(String user, String option){
+        String query;
+        if(option.equals("followed"))
+            query="MATCH (a:User)-[:FOLLOW]->(b:User) WHERE a.user_id = $user RETURN b AS user";
+        else
+            query="MATCH (a:User)-[:FOLLOW]->(b:User) WHERE b.user_id = $user RETURN a AS user";
+        ArrayList<Record> users = new ArrayList<>();
+        try ( Session session = graph_driver.session() ) {
+            users = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> persons;
+                persons = tx.run(query, parameters("user", user)).list();
+                return persons;
+            });
+            printUsers(users);
+        };
+            return selectUser(users);
     }
 
     public void showRecommended(String id) {
