@@ -5,15 +5,9 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Accumulators;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.BsonField;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
-import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.Document;
-import static com.mongodb.client.model.Sorts.ascending;
 
 import java.awt.image.AreaAveragingScaleFilter;
 import java.math.BigDecimal;
@@ -23,7 +17,6 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
-import static com.mongodb.client.model.Accumulators.avg;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Sorts.descending;
 import static com.mongodb.client.model.Updates.*;
@@ -181,13 +174,17 @@ public class MongoDbConnector {
         return last_user;
     }
 
+    public void mostUsedEquipment(){
+
+    }
+
     //function for print summary information of the given exercises
     public void printExercises(ArrayList<Document> docs){
-        System.out.printf("%3s %50s %20s %15s %15s", "   ", "Name", "Muscle Targeted", "Equipment", "Type\n");
+        System.out.printf("%5s %50s %20s %15s %15s", "     ", "Name", "Muscle Targeted", "Equipment", "Type\n");
         System.out.println("------------------------------------------------------------------------------------------------------------");
         for(int i=0;i<docs.size();i++) {
             Document d = docs.get(i);
-            System.out.printf("%3s %50s %20s %15s %15s", (i+1)+") ", d.getString("name"),d.getString("muscle_targeted"),
+            System.out.printf("%5s %50s %20s %15s %15s", (i+1)+") ", d.getString("name"),d.getString("muscle_targeted"),
                     d.getString("equipment"),d.getString("type"));
             System.out.println();
         }
@@ -195,11 +192,11 @@ public class MongoDbConnector {
 
     //function for print summary information of the given routines
     private void printRoutines(ArrayList<Document> docs) {
-        System.out.printf("%3s %10s %15s %15s %15s", "   ", "Trainer", "Level", "Starting day", "End day\n");
+        System.out.printf("%5s %10s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("------------------------------------------------------------------------------------------------------------");
         for(int i=0; i<docs.size(); i++) {
             Document d = docs.get(i);
-            System.out.printf("%3s %10s %15s %15s %15s", (i+1)+") ", d.getString("trainer"),d.getString("level"),
+            System.out.printf("%5s %10s %15s %15s %15s", (i+1)+") ", d.getString("trainer"),d.getString("level"),
                     d.getString("starting_day"),d.getString("end_day"));
             System.out.println("\n");
         }
@@ -207,11 +204,11 @@ public class MongoDbConnector {
 
     //function for print summary information of the given users
     public void printUsers(ArrayList<Document> docs) {
-        System.out.printf("%3s %10s %20s %10s %15s %15s %10s", "   ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
+        System.out.printf("%5s %10s %20s %10s %15s %15s %10s", "     ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<docs.size(); i++) {
             Document d = docs.get(i);
-            System.out.printf("%3s %10s %20s %10s %15s %15s %10s", (i+1)+") ", d.getString("user_id"),d.getString("name"),
+            System.out.printf("%5s %10s %20s %10s %15s %15s %10s", (i+1)+") ", d.getString("user_id"),d.getString("name"),
                     d.getString("gender"),d.getString("year_of_birth"),d.getString("level"),d.getString("trainer"));
             System.out.println("\n");
         }
@@ -375,6 +372,17 @@ public class MongoDbConnector {
         System.out.println("Level: " + count_result.first().getString("_id") + " count: " + String.valueOf(count_result.first().getInteger("count")) + "\n");
     }
 
+    public void showComments(String routine){
+        ArrayList<Document> comments = (ArrayList<Document>) workout.find(eq("_id", new ObjectId(routine))).first().get("comments");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
+        for(Document c: comments){
+            System.out.println("User: "+ c.getString("user"));
+            System.out.println("Time: "+ c.getString("Time"));
+            System.out.println("Comment: "+ c.getString("Comment"));
+            System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
+        }
+    }
+
     //function for print all information of the given exercise
     public Document showExercisesDetails(Document doc){
         System.out.println("--------------------------------------------------------------------------------------------------------");
@@ -430,6 +438,7 @@ public class MongoDbConnector {
             System.out.println("\nPress 1 to search an exercise\n"+
                                 "Press 2 to comment the routine\n"+
                                 "Press 3 to vote the routine\n"+
+                                "Press 4 to see routine's comments\n"+
                                 "Or press another key to return");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
@@ -448,6 +457,11 @@ public class MongoDbConnector {
                     return "c:"+id;
                 case "3":
                     return "v:"+id;
+                case "4":
+                    showComments(id);
+                    System.out.println("Press any key to continue..");
+                    input= sc.next();
+                    break;
                 default: return null;
             }
         }

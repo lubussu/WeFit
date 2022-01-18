@@ -163,6 +163,10 @@ public class TrainerManager extends UserManager{
         return exercise;
     }
 
+    public void mostUsedEquipment(){
+        mongoDb.mostUsedEquipment();
+    }
+
     public boolean sessionTrainer(){
         System.out.println("WELCOME " + self.getString("name"));
         boolean running = true;
@@ -173,8 +177,9 @@ public class TrainerManager extends UserManager{
                     "3) Add a new exercise\n" +
                     "4) Add a new trainer\n" +
                     "5) See normal user menu\n" +
-                    "6) Log out\n" +
-                    "7) Exit the app");
+                    "6) See average age per level\n" +
+                    "7) Log out\n" +
+                    "0) Exit the app");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -194,10 +199,13 @@ public class TrainerManager extends UserManager{
                     session();
                     break;
                 case "6":
+                    showAvgAgeLvl();
+                    break;
+                case "7":
                     running = false;
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     break;
-                case "7":
+                case "0":
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     return false;
                 default:

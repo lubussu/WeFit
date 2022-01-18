@@ -89,13 +89,64 @@ public class Neo4jConnector {
         };
     }
 
+    public String mostFollowedUsers(int num){
+        String query = "MATCH ()-[f:FOLLOW]->(u:User) "+
+                "WITH u, COUNT(f) AS num_followers "+
+                "RETURN u AS user, num_followers ORDER BY num_followers DESC LIMIT $num";
+
+        ArrayList<Record> trainers;
+        try ( Session session = graph_driver.session() ) {
+            trainers = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> records;
+                records = tx.run(query, parameters("num", num)).list();
+                return records;
+            });
+
+            System.out.printf("%5s %10s %20s %10s %10s %15s", "     ", "User_Id", "Name", "Gender", "Trainer", "Followers\n");
+            System.out.println("--------------------------------------------------------------------------------------------------------");
+            for(int i=0; i<trainers.size(); i++) {
+                Record r = trainers.get(i);
+                System.out.printf("%5s %10s %20s %10s %10s %15s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
+                        r.get("user").get("gender").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""),
+                        r.get("num_followers").toString());
+                System.out.println("\n");
+            }
+        };
+        return selectUser(trainers);
+    }
+
+    public String mostRatedTrainers(int num){
+        String query = "MATCH ()-[v:VOTE]->(r:Routine)<-[:CREATE_ROUTINE]-(u:User) "+
+                "WITH u, AVG(toInteger(v.vote)) AS avg_vote "+
+                "RETURN u AS user, avg_vote ORDER BY avg_vote DESC LIMIT $num";
+
+        ArrayList<Record> trainers;
+        try ( Session session = graph_driver.session() ) {
+            trainers = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> records;
+                records = tx.run(query, parameters("num", num)).list();
+                return records;
+            });
+
+            System.out.printf("%5s %10s %20s %10s %10s", "     ", "User_Id", "Name", "Gender", "Vote\n");
+            System.out.println("--------------------------------------------------------------------------------------------------------");
+            for(int i=0; i<trainers.size(); i++) {
+                Record r = trainers.get(i);
+                System.out.printf("%5s %10s %20s %10s %10s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
+                        r.get("user").get("gender").toString().replace("\"",""), r.get("avg_vote").toString());
+                System.out.println("\n");
+            }
+        };
+        return selectUser(trainers);
+    }
+
     //function for print summary information of the given routines
     public void printRoutines(ArrayList<Record> rec){
         System.out.printf("%5s %10s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
-            System.out.printf("%3s %10s %15s %15s %15s", (i+1)+") ", r.get("routine").get("trainer").toString().replace("\"",""),r.get("routine").get("level").toString().replace("\"",""),
+            System.out.printf("%5s %10s %15s %15s %15s", (i+1)+") ", r.get("routine").get("trainer").toString().replace("\"",""),r.get("routine").get("level").toString().replace("\"",""),
                     r.get("routine").get("starting_day").toString().replace("\"",""),r.get("routine").get("end_day").toString().replace("\"",""));
             System.out.println("\n");
         }
@@ -107,7 +158,7 @@ public class Neo4jConnector {
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
-            System.out.printf("%3s %10s %20s %10s %15s %15s %10s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
+            System.out.printf("%5s %10s %20s %10s %15s %15s %10s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
                     r.get("user").get("gender").toString().replace("\"",""), r.get("user").get("birth").toString().replace("\"",""),
                     r.get("user").get("level").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""));
             System.out.println("\n");
@@ -177,7 +228,7 @@ public class Neo4jConnector {
         return null;
     }
 
-    //function for retry the list of followed users (and select one of them)
+    //function for retry the list of followers/followed users (and select one of them)
     public String showFollowUsers(String user, String option){
         String query;
         if(option.equals("followed"))

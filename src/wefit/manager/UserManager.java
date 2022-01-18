@@ -47,7 +47,7 @@ public class UserManager {
             if(input.equals("r"))
                 return;
         } catch (IOException e) { e.printStackTrace();}
-        comment.append("Comment", input).append("Time", LocalDate.now()).append("user", self.getString("user_id"));
+        comment.append("Comment", input).append("Time", LocalDate.now().toString()).append("user", self.getString("user_id"));
         mongoDb.insertComment(comment, routine_id);
     }
 
@@ -463,20 +463,75 @@ public class UserManager {
         neo4j.followUser(id, input);
     }
 
+    public void mostFollowedUsers(){
+        String input;
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Insert the value of n");
+        while(true){
+            input = sc.next();
+            if(!input.matches("[0-9.]+"))
+                System.out.println("Please insert a numeric value");
+            else
+                break;
+        }
+        String ret = neo4j.mostFollowedUsers(Integer.parseInt(input));
+        optionsUser(ret);
+    }
+
+    public void mostRatedTrainers(){
+        String input;
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Insert the value of n");
+        while(true){
+            input = sc.next();
+            if(!input.matches("[0-9.]+"))
+                System.out.println("Please insert a numeric value");
+            else
+                break;
+        }
+        String ret = neo4j.mostRatedTrainers(Integer.parseInt(input));
+        optionsUser(ret);
+    }
+
+    public void optionsUser(String option){
+        if(option==null)
+            return;
+        if(option.startsWith("r:")) { //the user want to see routine details of one of followed users
+            String ret = mongoDb.showRoutineDetails(option.substring(2));
+            if(ret==null)
+                return;
+            else if(ret.startsWith("c:"))
+                addComment(option.substring(2));
+            else if(ret.startsWith("v:"))
+                addVote(option.substring(2));
+        }
+
+        else if(option.startsWith("u:")){ // the user want to see details of one user
+            String ret = mongoDb.showUserDetails(option.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
+            if(ret==null)
+                return;
+            else if(ret.startsWith("u:")) {
+                neo4j.unfollowUser(self.getString("user_id"), option.substring(2));
+            }
+        }
+    }
+
     public boolean session(){
         System.out.println("WELCOME " + self.getString("name"));
         boolean running = true;
         while(running) {
             System.out.println("\nWhat do you need?\n" +
-                    "1) See your current routine\n" +
-                    "2) See your past routines\n" +
-                    "3) See your followed list\n" +
-                    "4) See your followers list\n" +
-                    "5) See routines you commented\n" +
-                    "6) Find a routine by parameter\n" +
-                    "7) Find a user by parameter\n" +
-                    "8) Modify your profile\n" +
-                    "9) Log out\n" +
+                    "1)  See your current routine\n" +
+                    "2)  See your past routines\n" +
+                    "3)  See your followed list\n" +
+                    "4)  See your followers list\n" +
+                    "5)  See routines you commented\n" +
+                    "6)  Find a routine by parameter\n" +
+                    "7)  Find a user by parameter\n" +
+                    "8)  Find n-most rated personal trainer\n" +
+                    "9)  Find n-most followed users\n" +
+                    "10) Modify your profile\n" +
+                    "11) Log out\n" +
                     "0) Exit");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
@@ -503,9 +558,15 @@ public class UserManager {
                     findUser();
                     break;
                 case "8":
-                    changeProfile(self);
+                    mostRatedTrainers();
                     break;
                 case "9":
+                    mostFollowedUsers();
+                    break;
+                case "10":
+                    changeProfile(self);
+                    break;
+                case "11":
                     running = false;
                     break;
                 case "0":
@@ -606,58 +667,12 @@ public class UserManager {
 
     public void showFollowedUsers(){
         String ret = neo4j.showFollowUsers(self.getString("user_id"), "followed");
-        if(ret==null)
-            return;
-        if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users
-            String option = mongoDb.showRoutineDetails(ret.substring(2));
-            if(option==null)
-                return;
-            else if(option.startsWith("c:"))
-                addComment(ret.substring(2));
-            else if(option.startsWith("v:"))
-                addVote(ret.substring(2));
-        }
-
-        else if(ret.startsWith("u:")){ // the user want to see details of one user
-            System.out.println("else");
-            String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
-            System.out.println(option);
-            if(option==null)
-                return;
-
-            if(option.startsWith("u:")) {
-                System.out.println("unfollow");
-                neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
-            }
-        }
+        optionsUser(ret);
     }
 
     public void showFollowers(){
         String ret = neo4j.showFollowUsers(self.getString("user_id"), "followers");
-        if(ret==null)
-            return;
-        if(ret.startsWith("r:")) { //the user want to see routine details of one of followed users
-            String option = mongoDb.showRoutineDetails(ret.substring(2));
-            if(option==null)
-                return;
-            else if(option.startsWith("c:"))
-                addComment(ret.substring(2));
-            else if(option.startsWith("v:"))
-                addVote(ret.substring(2));
-        }
-
-        else if(ret.startsWith("u:")){ // the user want to see details of one user
-            System.out.println("else");
-            String option = mongoDb.showUserDetails(ret.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
-            System.out.println(option);
-            if(option==null)
-                return;
-
-            if(option.startsWith("u:")) {
-                System.out.println("unfollow");
-                neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
-            }
-        }
+        optionsUser(ret);
     }
 
     public void showPastRoutines(){
