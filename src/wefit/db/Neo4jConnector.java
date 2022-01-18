@@ -262,6 +262,67 @@ public class Neo4jConnector {
         }
     }
 
+    // function that show how many users gained a level in the interval specified
+    public void showLvlUpBI(String start, String end){
+        try (Session session = graph_driver.session()) {
+            ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> persons;
+                persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine)" +
+                                "WHERE exists((a)-[:HAS_ROUTINE]->(s:Routine))" +
+                                "AND r.starting_day >= $start AND s.end_day <= $end AND r.level == \"Beginner\" AND s.level == \"Intermediate\"" +
+                                "RETURN count(DISTINCT a) AS user",
+                        parameters("start", start, "end", end)).list();
+                return persons;
+            });
+            System.out.println("The number of users that passed Beginner->Intermediate from " + start + " to " + end +":");
+            Record r = recommended.get(0);
+            System.out.println(r.get("user").toString());
+        }
+    }
+
+    public void showLvlUpIE(String start, String end){
+        try (Session session = graph_driver.session()) {
+            ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> persons;
+                persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine)" +
+                                "WHERE exists((a)-[:HAS_ROUTINE]->(s:Routine))" +
+                                "AND r.starting_day >= $start AND s.end_day <= $end AND r.level == \"Intermediate\" AND s.level == \"Expert\"" +
+                                "RETURN count(DISTINCT a) AS users",
+                        parameters("start", start, "end", end)).list();
+                return persons;
+            });
+            System.out.println("The number of users that passed Intermediate->Expert from " + start + " to " + end +":");
+            Record r = recommended.get(0);
+            System.out.println(r.get("users").toString());
+        }
+    }
+
+    public void showMostFidelityUsers(int num){
+        String date = LocalDate.now().toString();
+        try (Session session = graph_driver.session()) {
+            ArrayList<Record> users = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> persons;
+                persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine)" +
+                                "WHERE r.end_day <= $date" +
+                                "WITH a, COUNT(r) AS past_routines" +
+                                "RETURN a AS user, past_routines ORDER BY past_routines DESC LIMIT $num",
+                        parameters("date", date, "num", num)).list();
+                return persons;
+            });
+
+            System.out.printf("%5s %10s %20s %10s %10s %15s", "     ", "User_Id", "Name", "Gender", "Trainer", "Followers\n");
+            System.out.println("--------------------------------------------------------------------------------------------------------");
+            for (int i = 0; i < users.size(); i++) {
+                Record r = users.get(i);
+                System.out.printf("%5s %10s %20s %10s %10s %15s", (i + 1) + ") ", r.get("user").get("user_id").toString().replace("\"", ""), r.get("user").get("name").toString().replace("\"", ""),
+                        r.get("user").get("gender").toString().replace("\"", ""), r.get("user").get("trainer").toString().replace("\"", ""),
+                        r.get("past_routines").toString());
+                System.out.println("\n");
+            }
+        }
+
+    }
+
     //function to show all the routines (past or current) of the given user
     public String showRoutines(String user, String period){
         ArrayList<Record> followed = new ArrayList<>();

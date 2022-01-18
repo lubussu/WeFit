@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Scanner;
@@ -184,6 +185,7 @@ public class TrainerManager extends UserManager{
             String input = sc.next();
             switch (input) {
                 case "1":
+                    showLvlUp();
                     //findRoutines();
                     break;
                 case "2":
@@ -220,10 +222,33 @@ public class TrainerManager extends UserManager{
         String threshold;
 
         Scanner sc = new Scanner(System.in);
-        System.out.println("Insert maximum threshold for the age...");
+        System.out.println("Insert threshold year for the age...");
         threshold = sc.next();
 
         mongoDb.showAvgAgeLvl(threshold);
+    }
+
+    public void showLvlUp(){
+        String start, end;
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Insert the starting date...");
+        start = sc.next();
+        System.out.println("Insert the ending date...");
+        end =sc.next();
+
+        neo4j.showLvlUpBI(start, end);
+        neo4j.showLvlUpIE(start, end);
+    }
+
+    public void showMostFidelityUsers(){
+        int num;
+        System.out.println("Insert the limit of the most fidelity user you want to see...");
+        Scanner sc = new Scanner(System.in);
+        num = Integer.parseInt(sc.next());
+        neo4j.showMostFidelityUsers(num);
+
     }
 
 }
