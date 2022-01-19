@@ -174,8 +174,31 @@ public class MongoDbConnector {
         return last_user;
     }
 
-    public void mostUsedEquipment(){
+    public void mostUsedEquipment(String muscle){
 
+        ArrayList<Bson> filters = new ArrayList<>();
+
+        Bson unwind = unwind("$exercises");
+        filters.add(unwind);
+        if(muscle != null){
+            Bson match_muscle = match(eq("exercises.muscle_targeted",muscle));
+            filters.add(match_muscle);
+        }
+        else
+            muscle = "ALL";
+        Bson group = group("$exercises.equipment", sum("count", 1));
+        Bson sort = sort(descending("count"));
+        Bson match = match(ne("_id","Body Only"));
+        Bson limit = limit(1);
+        filters.add(group);
+        filters.add(sort);
+        filters.add(match);
+        filters.add(limit);
+
+        Document aggregation = workout.aggregate(filters).first();
+
+        System.out.printf("%15s %15s %10s", muscle, aggregation.getString("_id"), aggregation.getInteger("count").toString());
+        System.out.println("\n");
     }
 
     //function for print summary information of the given exercises

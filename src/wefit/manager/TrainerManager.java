@@ -165,7 +165,11 @@ public class TrainerManager extends UserManager{
     }
 
     public void mostUsedEquipment(){
-        mongoDb.mostUsedEquipment();
+        System.out.printf("%15s %15s %10s", "MUSCLE", "EQUIPMENT", "COUNT");
+        System.out.println("\n----------------------------------------------");
+        mongoDb.mostUsedEquipment(null);
+        for(String s: Muscles)
+            mongoDb.mostUsedEquipment(s);
     }
 
     public boolean sessionTrainer(){
@@ -173,16 +177,18 @@ public class TrainerManager extends UserManager{
         boolean running = true;
         while(running) {
             System.out.println("\nWhat do you need?\n" +
-                    "1) See your routines\n" +
-                    "2) Add a new routine\n" +
-                    "3) Add a new exercise\n" +
-                    "4) Add a new trainer\n" +
-                    "5) See normal user menu\n" +
-                    "6) See average age per level\n" +
-                    "7) Find most fidelity users\n" +
-                    "8) Show level ups\n" +
-                    "9) Log out\n" +
-                    "0) Exit the app");
+                    "1)  See your routines\n" +
+                    "2)  Add a new routine\n" +
+                    "3)  Add a new exercise\n" +
+                    "4)  Add a new trainer\n" +
+                    "5)  See normal user menu\n" +
+                    "6)  See average age per level\n" +
+                    "7)  Find most fidelity users\n" +
+                    "8)  Find most used equipments\n" +
+                    "9)  Find most common exercises in most rated routines\n" +
+                    "10) Show level up\n" +
+                    "11) Log out\n" +
+                    "0)  Exit the app");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
@@ -208,9 +214,15 @@ public class TrainerManager extends UserManager{
                     showMostFidelityUsers();
                     break;
                 case "8":
-                    showLvlUp();
+                    mostUsedEquipment();
                     break;
                 case "9":
+                    //mostVoted
+                    break;
+                case "10":
+                    showLvlUp();
+                    break;
+                case "11":
                     running = false;
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     break;
