@@ -165,11 +165,7 @@ public class TrainerManager extends UserManager{
     }
 
     public void mostUsedEquipment(){
-        System.out.printf("%15s %15s %10s", "MUSCLE", "EQUIPMENT", "COUNT");
-        System.out.println("\n----------------------------------------------");
-        mongoDb.mostUsedEquipment(null);
-        for(String s: Muscles)
-            mongoDb.mostUsedEquipment(s);
+        mongoDb.mostUsedEquipment();
     }
 
     public boolean sessionTrainer(){
@@ -184,15 +180,13 @@ public class TrainerManager extends UserManager{
                     "5) See normal user menu\n" +
                     "6) See average age per level\n" +
                     "7) Find most fidelity users\n" +
-                    "8) Find most used equipments\n" +
-                    "9) Find most common exercises in most rated routines\n" +
-                    "10) Log out\n" +
+                    "8) Show level ups\n" +
+                    "9) Log out\n" +
                     "0) Exit the app");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
                 case "1":
-                    showLvlUp();
                     //findRoutines();
                     break;
                 case "2":
@@ -214,9 +208,9 @@ public class TrainerManager extends UserManager{
                     showMostFidelityUsers();
                     break;
                 case "8":
-                    mostUsedEquipment();
+                    showLvlUp();
                     break;
-                case "10":
+                case "9":
                     running = false;
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     break;
@@ -251,8 +245,15 @@ public class TrainerManager extends UserManager{
         System.out.println("Insert the ending date...");
         end =sc.next();
 
+
+        System.out.println("The number of users that leveled up from " + start + " to " + end +":");
+        System.out.printf("%22s %25s %25s", "Beginner->Intermediate", "Intermediate->Expert", "Beginner->Expert");
+        System.out.println();
         neo4j.showLvlUpBI(start, end);
         neo4j.showLvlUpIE(start, end);
+        neo4j.showLvlUpBE(start, end);
+        System.out.println();
+        System.out.println();
     }
 
     public void showMostFidelityUsers(){
