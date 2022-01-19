@@ -268,14 +268,16 @@ public class Neo4jConnector {
         try (Session session = graph_driver.session()) {
             ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
-                persons = tx.run("MATCH (s:Routine)<-[:HAS_ROUTINE]-(a:User)-[:HAS_ROUTINE]->(r:Routine) " +
-                                "WHERE r.starting_day >= $start AND s.end_day <= $end AND r.level = \"Beginner\" AND s.level = \"Intermediate\" AND s.starting_day > r.starting_day " +
+                persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine)" +
+                                "WHERE exists((a)-[:HAS_ROUTINE]->(s:Routine))" +
+                                "AND r.starting_day >= $start AND s.end_day <= $end AND r.level == \"Beginner\" AND s.level == \"Intermediate\"" +
                                 "RETURN count(DISTINCT a) AS user",
                         parameters("start", start, "end", end)).list();
                 return persons;
             });
+            System.out.println("The number of users that passed Beginner->Intermediate from " + start + " to " + end +":");
             Record r = recommended.get(0);
-            System.out.printf("%22s", r.get("user").toString());
+            System.out.println(r.get("user").toString());
         }
     }
 
@@ -283,29 +285,16 @@ public class Neo4jConnector {
         try (Session session = graph_driver.session()) {
             ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
-                persons = tx.run("MATCH (s:Routine)<-[:HAS_ROUTINE]-(a:User)-[:HAS_ROUTINE]->(r:Routine) " +
-                                "WHERE r.starting_day >= $start AND s.end_day <= $end AND r.level = \"Intermediate\" AND s.level = \"Expert\" AND s.starting_day > r.starting_day " +
-                                "RETURN count(DISTINCT a) AS user",
+                persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine)" +
+                                "WHERE exists((a)-[:HAS_ROUTINE]->(s:Routine))" +
+                                "AND r.starting_day >= $start AND s.end_day <= $end AND r.level == \"Intermediate\" AND s.level == \"Expert\"" +
+                                "RETURN count(DISTINCT a) AS users",
                         parameters("start", start, "end", end)).list();
                 return persons;
             });
+            System.out.println("The number of users that passed Intermediate->Expert from " + start + " to " + end +":");
             Record r = recommended.get(0);
-            System.out.printf("%26s", r.get("user").toString());
-        }
-    }
-
-    public void showLvlUpBE(String start, String end){
-        try (Session session = graph_driver.session()) {
-            ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
-                List<Record> persons;
-                persons = tx.run("MATCH (s:Routine)<-[:HAS_ROUTINE]-(a:User)-[:HAS_ROUTINE]->(r:Routine) " +
-                                "WHERE r.starting_day >= $start AND s.end_day <= $end AND r.level = \"Beginner\" AND s.level = \"Expert\" AND s.starting_day > r.starting_day " +
-                                "RETURN count(DISTINCT a) AS user",
-                        parameters("start", start, "end", end)).list();
-                return persons;
-            });
-            Record r = recommended.get(0);
-            System.out.printf("%26s", r.get("user").toString());
+            System.out.println(r.get("users").toString());
         }
     }
 
