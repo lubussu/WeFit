@@ -297,30 +297,28 @@ public class Neo4jConnector {
         }
     }
 
-    public void showMostFidelityUsers(int num){
+    public String showMostFidelityUsers(int num){
         String date = LocalDate.now().toString();
         try (Session session = graph_driver.session()) {
             ArrayList<Record> users = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
-                persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine)" +
-                                "WHERE r.end_day <= $date" +
-                                "WITH a, COUNT(r) AS past_routines" +
-                                "RETURN a AS user, past_routines ORDER BY past_routines DESC LIMIT $num",
+                persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine) " +
+                                "WHERE r.end_day < $date " +
+                                "RETURN a AS user, COUNT(r) AS past_routines, min(r.starting_day) AS first_routine ORDER BY past_routines DESC, first_routine LIMIT $num",
                         parameters("date", date, "num", num)).list();
                 return persons;
             });
 
-            System.out.printf("%5s %10s %20s %10s %10s %15s", "     ", "User_Id", "Name", "Gender", "Trainer", "Followers\n");
+            System.out.printf("%5s %10s %15s %15s", "     ", "User", "Past routines", "First routine\n");
             System.out.println("--------------------------------------------------------------------------------------------------------");
             for (int i = 0; i < users.size(); i++) {
                 Record r = users.get(i);
-                System.out.printf("%5s %10s %20s %10s %10s %15s", (i + 1) + ") ", r.get("user").get("user_id").toString().replace("\"", ""), r.get("user").get("name").toString().replace("\"", ""),
-                        r.get("user").get("gender").toString().replace("\"", ""), r.get("user").get("trainer").toString().replace("\"", ""),
-                        r.get("past_routines").toString());
+                System.out.printf("%5s %10s %15s %15s", (i + 1) + ") ", r.get("user").get("user_id").toString().replace("\"", ""), r.get("past_routines").toString().replace("\"", ""),
+                        r.get("first_routine").toString().replace("\"", ""));
                 System.out.println("\n");
             }
+            return selectUser(users);
         }
-
     }
 
     //function to show all the routines (past or current) of the given user

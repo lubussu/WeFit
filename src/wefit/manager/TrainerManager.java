@@ -179,7 +179,8 @@ public class TrainerManager extends UserManager{
                     "4) Add a new trainer\n" +
                     "5) See normal user menu\n" +
                     "6) See average age per level\n" +
-                    "7) Log out\n" +
+                    "7) Find most fidelity users\n" +
+                    "8) Log out\n" +
                     "0) Exit the app");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
@@ -204,6 +205,9 @@ public class TrainerManager extends UserManager{
                     showAvgAgeLvl();
                     break;
                 case "7":
+                    showMostFidelityUsers();
+                    break;
+                case "8":
                     running = false;
                     System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
                     break;
@@ -247,8 +251,8 @@ public class TrainerManager extends UserManager{
         System.out.println("Insert the limit of the most fidelity user you want to see...");
         Scanner sc = new Scanner(System.in);
         num = Integer.parseInt(sc.next());
-        neo4j.showMostFidelityUsers(num);
-
+        String ret = neo4j.showMostFidelityUsers(num);
+        optionsUser(ret);
     }
 
 }

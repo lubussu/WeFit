@@ -11,6 +11,7 @@ import wefit.manager.TrainerManager;
 import wefit.manager.UserManager;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Scanner;
 
 import static java.lang.System.exit;
