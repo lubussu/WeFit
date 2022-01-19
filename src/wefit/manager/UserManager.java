@@ -549,7 +549,7 @@ public class UserManager {
                     showFollowers();
                     break;
                 case "5":
-                    System.out.println("You have not yet commented any routine...\n");
+                    //showCommentedRoutines();
                     break;
                 case "6":
                     findRoutine();

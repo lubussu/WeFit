@@ -243,6 +243,7 @@ public class Neo4jConnector {
                 return persons;
             });
             printUsers(users);
+
         };
             return selectUser(users);
     }
