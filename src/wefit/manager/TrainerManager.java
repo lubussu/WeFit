@@ -166,9 +166,9 @@ public class TrainerManager extends UserManager{
         }
 
 
-        List<String> images = new ArrayList<String>();
-        images.add(exerciseImage1);
-        images.add(exerciseImage2);
+        List<Document> images = new ArrayList<Document>();
+        images.add(new Document("image1", exerciseImage1));
+        images.add(new Document("image2", exerciseImage2));
 
         Document newExercise = new Document();
         newExercise.append("name", exerciseName);
