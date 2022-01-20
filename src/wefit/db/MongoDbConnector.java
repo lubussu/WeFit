@@ -134,6 +134,16 @@ public class MongoDbConnector {
         System.out.println("Success! Your comment has been inserted.");
     }
 
+    //function to insert a new exercise in the db
+    public void insertNewExercise(Document exercise){
+        try {
+            InsertOneResult result = workout.insertOne(exercise);
+            System.out.println("Success! Your new exercise has been inserted.");
+        } catch (MongoException me) {
+            System.err.println("Unable to insert due to an error: " + me);
+        }
+    }
+
     //function to insert a routine in the db
     public void insertRoutine(Document routine){
         try {
