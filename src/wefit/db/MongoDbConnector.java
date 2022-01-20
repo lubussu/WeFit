@@ -209,6 +209,28 @@ public class MongoDbConnector {
         System.out.println("\n");
     }
 
+    public void mostVotedPresentExercises(int max_vote, int max_ex){
+        Bson order_vote = sort(descending("vote"));
+        Bson limit_vote = limit(max_vote);
+        Bson unwind = unwind("$exercises");
+        Bson group = group("$exercises.name", sum("count",1));
+        Bson order_ex = sort(descending("count"));
+        Bson limit_ex = limit(max_ex);
+
+        List<Bson> most_pipeline = Arrays.asList(order_vote, limit_vote, unwind, group, order_ex, limit_ex);
+        ArrayList<Document> most_result = new ArrayList<>();
+        workout.aggregate(most_pipeline).into(most_result);
+
+        System.out.printf("%55s %10s", "EXERCISE", "COUNT");
+        System.out.println();
+        System.out.println("---------------------------------------------------------------------------");
+        for( Document doc : most_result){
+            System.out.printf("%55s %10s", doc.getString("_id"), doc.getInteger("count").toString());
+            System.out.println();
+        }
+        System.out.println();
+    }
+
     //function for print summary information of the given exercises
     public void printExercises(ArrayList<Document> docs){
         System.out.printf("%5s %50s %20s %15s %15s", "     ", "Name", "Muscle Targeted", "Equipment", "Type\n");

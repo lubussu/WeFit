@@ -22,7 +22,7 @@ import static com.mongodb.client.model.Filters.regex;
 public class TrainerManager extends UserManager{
 
     private String[] Muscles = {"Shoulders", "Traps", "Biceps", "Neck", "Lower Back", "Adductors", "Forearms", "Hamstrings", "Lats", "Middle Back", "Glutes", "Chest", "Abdominals", "Quadriceps", "Abductors", "Calves", "Triceps"};
-    private String[] Levels = {"Beginner", "Intermediate", "advanced"};
+    private String[] Levels = {"Beginner", "Intermediate", "Expert"};
 
     public TrainerManager(Document trainer, MongoDbConnector mongo){
         super(trainer, mongo);
@@ -373,6 +373,22 @@ public class TrainerManager extends UserManager{
             mongoDb.mostUsedEquipment(s);
     }
 
+    public void mostVotedPresentExercises(){
+        Scanner sc = new Scanner(System.in);
+        String s;
+
+        System.out.println("Insert the number of highest voted routine you want to consider and the number of exercises you want to show" +
+                "or press r to return...");
+        s = sc.next();
+        if(s.equals("r")) return;
+        int max_vote = Integer.parseInt(s);
+        s= sc.next();
+        if(s.equals("r")) return;
+        int max_ex = Integer.parseInt(s);
+
+        mongoDb.mostVotedPresentExercises(max_vote, max_ex);
+    }
+
     public boolean sessionTrainer(){
         System.out.println("WELCOME " + self.getString("name"));
         boolean running = true;
@@ -418,7 +434,7 @@ public class TrainerManager extends UserManager{
                     mostUsedEquipment();
                     break;
                 case "9":
-                    //mostVoted
+                    mostVotedPresentExercises();
                     break;
                 case "10":
                     showLvlUp();
