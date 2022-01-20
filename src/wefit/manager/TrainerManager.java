@@ -404,8 +404,8 @@ public class TrainerManager extends UserManager{
                     "7)  Find most fidelity users\n" +
                     "8)  Find most used equipments\n" +
                     "9)  Find most common exercises in most rated routines\n" +
-                    "-----------------------------\n" +
                     "10) Show level up\n" +
+                    "-----------------------------\n" +
                     "11) Log out\n" +
                     "0)  Exit the app");
             Scanner sc = new Scanner(System.in);
