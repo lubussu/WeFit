@@ -28,6 +28,22 @@ public class TrainerManager extends UserManager{
         super(trainer, mongo);
     }
 
+    public void findRoutines(String trainer) {
+
+        neo4j.searchRoutinesByTrainer(trainer);
+       /* System.out.println(trainer);
+        ArrayList<Bson> filters = new ArrayList<>();
+        filters.add(mongoDb.getFilter("workout", trainer, "eq"));
+        String routine = mongoDb.searchRoutines(filters);
+        //String routine = neo4j.showRoutines(self.getString("trainer"), "current");
+        if(routine!=null) {
+            String option = mongoDb.showRoutineDetails(routine);
+            if(option==null)
+                return;
+        }*/
+
+    }
+
     public void addExercise(){
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         Scanner sc = new Scanner(System.in);
@@ -412,7 +428,7 @@ public class TrainerManager extends UserManager{
             String input = sc.next();
             switch (input) {
                 case "1":
-                    //findRoutines();
+                    findRoutines(self.getString("user_id"));
                     break;
                 case "2":
                     createRoutine();
