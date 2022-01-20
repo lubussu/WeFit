@@ -146,7 +146,8 @@ public class Neo4jConnector {
     }
 
     //function for print summary information of the given routines
-    public void printRoutines(ArrayList<Record> rec){
+    public void printRoutines(ArrayList<Record> rec, int num){
+        int cycle = 0;
         System.out.printf("%5s %10s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
@@ -154,11 +155,19 @@ public class Neo4jConnector {
             System.out.printf("%5s %10s %15s %15s %15s", (i+1)+") ", r.get("routine").get("trainer").toString().replace("\"",""),r.get("routine").get("level").toString().replace("\"",""),
                     r.get("routine").get("starting_day").toString().replace("\"",""),r.get("routine").get("end_day").toString().replace("\"",""));
             System.out.println("\n");
+            cycle++;
+            if(cycle == num){
+                System.out.println("Insert m to see more or another key to return...");
+                Scanner sc = new Scanner(System.in);
+                if(sc.next().equals("m")) cycle = 0;
+                else return;
+            }
         }
     }
 
     //function for print summary information of the given users
-    public void printUsers(ArrayList<Record> rec) {
+    public void printUsers(ArrayList<Record> rec, int num) {
+        int cycle = 0;
         System.out.printf("%5s %10s %20s %10s %15s %15s %10s", "     ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
@@ -167,6 +176,13 @@ public class Neo4jConnector {
                     r.get("user").get("gender").toString().replace("\"",""), r.get("user").get("birth").toString().replace("\"",""),
                     r.get("user").get("level").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""));
             System.out.println("\n");
+            cycle++;
+            if(cycle == num){
+                System.out.println("Insert m to see more or another key to return...");
+                Scanner sc = new Scanner(System.in);
+                if(sc.next().equals("m")) cycle = 0;
+                else return;
+            }
         }
     }
     
@@ -245,7 +261,7 @@ public class Neo4jConnector {
                 persons = tx.run(query, parameters("user", user)).list();
                 return persons;
             });
-            printUsers(users);
+            printUsers(users, 10);
         };
             return selectUser(users);
     }
@@ -257,11 +273,11 @@ public class Neo4jConnector {
                 persons = tx.run("MATCH (a:User)-[:FOLLOW]->(b:User)-[:FOLLOW]->(c:User) WHERE a.user_id = $user " +
                                 "AND NOT exists((a)-[:FOLLOW]->(c)) AND " +
                                 "a.level = c.level " +
-                                "RETURN c AS user LIMIT 5",
+                                "RETURN c AS user ORDER BY RAND()",
                         parameters("user", id)).list();
                 return persons;
             });
-            printUsers(recommended);
+            printUsers(recommended, 5);
             return selectUser(recommended);
         }
     }
@@ -355,7 +371,7 @@ public class Neo4jConnector {
                 return routines;
             });
         };
-        printRoutines(followed);
+        printRoutines(followed, 10);
 
         String input;
         while (true) {

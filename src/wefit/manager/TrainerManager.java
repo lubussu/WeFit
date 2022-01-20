@@ -399,10 +399,12 @@ public class TrainerManager extends UserManager{
                     "3)  Add a new exercise\n" +
                     "4)  Add a new trainer\n" +
                     "5)  See normal user menu\n" +
+                    "----------ANALYTICS----------\n" +
                     "6)  See average age per level\n" +
                     "7)  Find most fidelity users\n" +
                     "8)  Find most used equipments\n" +
                     "9)  Find most common exercises in most rated routines\n" +
+                    "-----------------------------\n" +
                     "10) Show level up\n" +
                     "11) Log out\n" +
                     "0)  Exit the app");

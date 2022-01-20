@@ -232,7 +232,8 @@ public class MongoDbConnector {
     }
 
     //function for print summary information of the given exercises
-    public void printExercises(ArrayList<Document> docs){
+    public void printExercises(ArrayList<Document> docs, int num){
+        int cycle = 0;
         System.out.printf("%5s %50s %20s %15s %15s", "     ", "Name", "Muscle Targeted", "Equipment", "Type\n");
         System.out.println("------------------------------------------------------------------------------------------------------------");
         for(int i=0;i<docs.size();i++) {
@@ -240,11 +241,19 @@ public class MongoDbConnector {
             System.out.printf("%5s %50s %20s %15s %15s", (i+1)+") ", d.getString("name"),d.getString("muscle_targeted"),
                     d.getString("equipment"),d.getString("type"));
             System.out.println();
+            cycle++;
+            if(cycle == num){
+                System.out.println("Insert m to see more or another key to return...");
+                Scanner sc = new Scanner(System.in);
+                if(sc.next().equals("m")) cycle = 0;
+                else return;
+            }
         }
     }
 
     //function for print summary information of the given routines
-    private void printRoutines(ArrayList<Document> docs) {
+    private void printRoutines(ArrayList<Document> docs, int num) {
+        int cycle = 0;
         System.out.printf("%5s %10s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day\n");
         System.out.println("------------------------------------------------------------------------------------------------------------");
         for(int i=0; i<docs.size(); i++) {
@@ -252,11 +261,19 @@ public class MongoDbConnector {
             System.out.printf("%5s %10s %15s %15s %15s", (i+1)+") ", d.getString("trainer"),d.getString("level"),
                     d.getString("starting_day"),d.getString("end_day"));
             System.out.println("\n");
+            cycle++;
+            if(cycle == num){
+                System.out.println("Insert m to see more or another key to return...");
+                Scanner sc = new Scanner(System.in);
+                if(sc.next().equals("m")) cycle = 0;
+                else return;
+            }
         }
     }
 
     //function for print summary information of the given users
-    public void printUsers(ArrayList<Document> docs) {
+    public void printUsers(ArrayList<Document> docs, int num) {
+        int cycle = 0;
         System.out.printf("%5s %10s %20s %10s %15s %15s %10s", "     ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<docs.size(); i++) {
@@ -264,6 +281,13 @@ public class MongoDbConnector {
             System.out.printf("%5s %10s %20s %10s %15s %15s %10s", (i+1)+") ", d.getString("user_id"),d.getString("name"),
                     d.getString("gender"),d.getString("year_of_birth"),d.getString("level"),d.getString("trainer"));
             System.out.println("\n");
+            cycle++;
+            if(cycle == num){
+                System.out.println("Insert m to see more or another key to return...");
+                Scanner sc = new Scanner(System.in);
+                if(sc.next().equals("m")) cycle = 0;
+                else return;
+            }
         }
     }
 
@@ -289,7 +313,7 @@ public class MongoDbConnector {
             return null;
         }
 
-        printExercises(docs);
+        printExercises(docs, 10);
         return selectExercise(docs, print);
     }
 
@@ -301,7 +325,7 @@ public class MongoDbConnector {
         if(docs.size()==0)
             System.out.println("Results not found");
         else {
-            printRoutines(docs);
+            printRoutines(docs, 10);
             return selectRoutine(docs);
         }
         return null;
@@ -314,7 +338,7 @@ public class MongoDbConnector {
         if(docs.size()==0)
             System.out.println("Results not found");
         else {
-            printUsers(docs);
+            printUsers(docs, 10);
             return selectUser(docs);
         }
         return null;
@@ -480,15 +504,15 @@ public class MongoDbConnector {
             System.out.print("rest_time(sec): " + doc.getInteger("rest_time(sec)")+"\n\n");
 
             System.out.print("WARM UP:\n");
-            printExercises((ArrayList<Document>)doc.get("warm_up"));
+            printExercises((ArrayList<Document>)doc.get("warm_up"), 18);
             System.out.println();
 
             System.out.print("EXERCISES:\tRepeat the sequence "+doc.getInteger("repeat")+" times\n");
-            printExercises((ArrayList<Document>)doc.get("exercises"));
+            printExercises((ArrayList<Document>)doc.get("exercises"), 18);
             System.out.println();
 
             System.out.print("STRETCHING:\n");
-            printExercises((ArrayList<Document>)doc.get("stretching"));
+            printExercises((ArrayList<Document>)doc.get("stretching"), 18);
 
             System.out.println("\nPress 1 to search an exercise\n"+
                                 "Press 2 to comment the routine\n"+
