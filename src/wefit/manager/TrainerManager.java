@@ -10,7 +10,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.*;
+import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 
@@ -21,10 +22,166 @@ import static com.mongodb.client.model.Filters.regex;
 public class TrainerManager extends UserManager{
 
     private String[] Muscles = {"Shoulders", "Traps", "Biceps", "Neck", "Lower Back", "Adductors", "Forearms", "Hamstrings", "Lats", "Middle Back", "Glutes", "Chest", "Abdominals", "Quadriceps", "Abductors", "Calves", "Triceps"};
+    private String[] Levels = {"Beginner", "Intermediate", "advanced"};
 
     public TrainerManager(Document trainer, MongoDbConnector mongo){
         super(trainer, mongo);
     }
+
+    public void addExercise(){
+        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+        Scanner sc = new Scanner(System.in);
+        int r = 0;
+        String exerciseName = null;
+        String exerciseType = null;
+        String exerciseMuscle = null;
+        String exerciseEquipment = null;
+        String exerciseLevel = null;
+        String exerciseImage1 = null;
+        String exerciseImage2 = null;
+        String exerciseDetails = null;
+
+        while(r<8) {
+            switch(r) {
+                case 0:
+                    System.out.println("\nInsert the name of the new exercise...");
+                    String search_ex = null;
+                    try {
+                        search_ex = bufferRead.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    exerciseName = search_ex;
+                    r++;
+                    break;
+                case 1:
+                    System.out.println("\nInsert the type of the new exercise...");
+                    String search_type = null;
+                    try {
+                        search_type = bufferRead.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    exerciseType = search_type;
+                    r++;
+                    break;
+                case 2:
+                    System.out.println("\nSelect the number of the muscle target of the new exercise...");
+
+                    for (int i = 0; i < 17; i++) {
+                        System.out.println(i + " - " + Muscles[i]);
+                    }
+                    String search_muscle = null;
+                    try {
+                        search_muscle = bufferRead.readLine();
+                    } catch (IOException e) { e.printStackTrace(); }
+
+                    if (Integer.parseInt(search_muscle) > 17) {
+                        System.out.println("\nMuscle target not found... please select again");
+                        r = 2;
+                    } else {
+                        for (int j = 0; j < 17; j++) {
+                            if (Integer.parseInt(search_muscle) == j) {
+                                exerciseMuscle = Muscles[j];
+                                r++;
+                            }
+                        }
+                    }
+                    break;
+                case 3:
+                    System.out.println("\nInsert the equipment of the new exercise...");
+                    String search_equipment = null;
+                    try {
+                        search_equipment = bufferRead.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    exerciseEquipment = search_equipment;
+                    r++;
+                    break;
+                case 4:
+                    System.out.println("\nSelect the level of the new exercise...");
+                    for (int i = 0; i < 3; i++) {
+                        System.out.println(i + " - " + Levels[i]);
+                    }
+                    String search_level = null;
+                    try {
+                        search_level = bufferRead.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (Integer.parseInt(search_level) > 3) {
+                        System.out.println("\nLevel not valid... please select again");
+                        r = 4;
+                    } else {
+                        for (int j = 0; j < 3; j++) {
+                            if (Integer.parseInt(search_level) == j) {
+                                exerciseLevel = Levels[j];
+                                r++;
+                            }
+                        }
+                    }
+                    break;
+                case 5:
+                    System.out.println("\nInsert the first image's link of the new exercise...");
+                    String search_image1 = null;
+                    try {
+                        search_image1 = bufferRead.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    exerciseImage1 = search_image1;
+                    r++;
+                    break;
+                case 6:
+                    System.out.println("\nInsert the second image's link of the new exercise...");
+                    String search_image2 = null;
+                    try {
+                        search_image2 = bufferRead.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    exerciseImage2 = search_image2;
+                    r++;
+                    break;
+                case 7:
+                    System.out.println("\nWrite an explanation of the new exercise...");
+                    String search_details = null;
+                    try {
+                        search_details = bufferRead.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    exerciseDetails = search_details;
+                    r++;
+                    break;
+            }
+        }
+
+
+        List<String> images = new ArrayList<String>();
+        images.add(exerciseImage1);
+        images.add(exerciseImage2);
+
+        Document newExercise = new Document();
+        newExercise.append("name", exerciseName);
+        newExercise.append("type", exerciseType);
+        newExercise.append("muscle_targeted", exerciseMuscle);
+        newExercise.append("equipment", exerciseEquipment);
+        newExercise.append("level", exerciseLevel);
+        newExercise.append("images", images);
+        newExercise.append("details", exerciseDetails);
+
+        mongoDb.insertNewExercise(newExercise);
+    }
+
 
     //change a user from normal user to trainer
     public void addTrainer(){
@@ -199,7 +356,7 @@ public class TrainerManager extends UserManager{
                     createRoutine();
                     break;
                 case "3":
-                    //addExercise();
+                    addExercise();
                     break;
                 case "4":
                     addTrainer();
