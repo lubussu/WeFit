@@ -15,6 +15,8 @@ import org.neo4j.driver.internal.InternalPath;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,9 +84,9 @@ public class Neo4jConnector {
         try ( Session session = graph_driver.session() )
         {
             session.run("MATCH (a:User {user_id:$user}) MATCH (b:User {user_id:$trainer})" +
-                    "CREATE (r:Routine {user:$user, trainer:$trainer, level:$level, starting_day:$s_day, end_day:$e_day}) "+
+                    "CREATE (r:Routine {_id: $id, user:$user, trainer:$trainer, level:$level, starting_day:$s_day, end_day:$e_day}) "+
                     "CREATE (a)-[:HAS_ROUTINE]->(r) CREATE (b)-[:CREATE_ROUTINE]->(r)",
-                    parameters("user", routine.getString("user"), "trainer", routine.getString("trainer"), "level", routine.getString("level"),
+                    parameters("id", routine.getObjectId("_id").toString(),"user", routine.getString("user"), "trainer", routine.getString("trainer"), "level", routine.getString("level"),
                             "s_day",routine.getString("starting_day"),"e_day",routine.getString("end_day")));
         };
     }
@@ -132,8 +134,11 @@ public class Neo4jConnector {
             System.out.println("--------------------------------------------------------------------------------------------------------");
             for(int i=0; i<trainers.size(); i++) {
                 Record r = trainers.get(i);
+                Double vote = Double.parseDouble(r.get("avg_vote").toString());
+                BigDecimal bd = new BigDecimal(vote).setScale(3, RoundingMode.HALF_UP);
+                vote = bd.doubleValue();
                 System.out.printf("%5s %10s %20s %10s %10s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
-                        r.get("user").get("gender").toString().replace("\"",""), r.get("avg_vote").toString());
+                        r.get("user").get("gender").toString().replace("\"",""), vote.toString());
                 System.out.println("\n");
             }
         };
@@ -170,10 +175,12 @@ public class Neo4jConnector {
         String input;
         while (true) {
             System.out.println("Press the number of the user you want to select\n" +
-                    "or press 0 to return to the main menu");
+                    "or press r to return to the main menu");
 
             Scanner sc = new Scanner(System.in);
             input = sc.next();
+            if(input.equals("r"))
+                return null;
             if (!input.matches("[0-9.]+"))
                 System.out.println("Please select an existing option!");
             else if ((Integer.parseInt(input)) > users.size())
@@ -181,49 +188,45 @@ public class Neo4jConnector {
             else
                 break;
         }
-        switch (input) {
-            case "0":
-                return null;
-            default:
-                String id = users.get(Integer.parseInt(input)-1).get("user").get("user_id").toString();
-                String trainer = users.get(Integer.parseInt(input)-1).get("user").get("trainer").toString().replace("\"", "");
-                System.out.println("Press 1 to see user's details\n"+
-                        "or press 2 to see user's routines");
 
-                Scanner sc = new Scanner(System.in);
-                input = sc.next();
-                switch (input){
-                    case "1":
-                        return "u:"+id.replace("\"","");
-                    case"2": {
-                        if (trainer.equals("yes")){
-                            System.out.println("Press 1 to see own routines\n"+
-                                    "or press 2 to see routine's created");
+        String id = users.get(Integer.parseInt(input)-1).get("user").get("user_id").toString();
+        String trainer = users.get(Integer.parseInt(input)-1).get("user").get("trainer").toString().replace("\"", "");
+        System.out.println("Press 1 to see user's details\n"+
+                "or press 2 to see user's routines");
 
-                            input = sc.next();
-                            String routine=null;
-                            switch (input){
-                                case "1":
-                                    routine = showRoutines(id.replace("\"", ""), "all");
-                                    if (routine != null)
-                                        return "r:" + routine;
-                                    System.out.println("Result not found");
-                                    break;
-                                case "2":
-                                    //routine = showTrainerRoutines(id.replace("\"", ""), "all"); ---> DA FARE
-                                    if (routine != null)
-                                        return "r:" + routine;
-                                    System.out.println("Result not found");
-                                    break;
-                            }
-                        }
-                        else {
-                            String routine = showRoutines(id.replace("\"", ""), "all");
+        Scanner sc = new Scanner(System.in);
+        input = sc.next();
+        switch (input){
+            case "1":
+                return "u:"+id.replace("\"","");
+            case"2": {
+                if (trainer.equals("yes")){
+                    System.out.println("Press 1 to see own routines\n"+
+                            "or press 2 to see routine's created");
+
+                    input = sc.next();
+                    String routine=null;
+                    switch (input){
+                        case "1":
+                            routine = showRoutines(id.replace("\"", ""), "all");
                             if (routine != null)
                                 return "r:" + routine;
-                        }
+                            System.out.println("Result not found");
+                            break;
+                        case "2":
+                            //routine = showTrainerRoutines(id.replace("\"", ""), "all"); ---> DA FARE
+                            if (routine != null)
+                                return "r:" + routine;
+                            System.out.println("Result not found");
+                            break;
                     }
                 }
+                else {
+                    String routine = showRoutines(id.replace("\"", ""), "all");
+                    if (routine != null)
+                        return "r:" + routine;
+                }
+            }
         }
         return null;
     }
@@ -247,18 +250,19 @@ public class Neo4jConnector {
             return selectUser(users);
     }
 
-    public void showRecommended(String id) {
+    public String showRecommended(String id) {
         try (Session session = graph_driver.session()) {
             ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
                 persons = tx.run("MATCH (a:User)-[:FOLLOW]->(b:User)-[:FOLLOW]->(c:User) WHERE a.user_id = $user " +
                                 "AND NOT exists((a)-[:FOLLOW]->(c)) AND " +
-                                "a.level = c.level" +
+                                "a.level = c.level " +
                                 "RETURN c AS user LIMIT 5",
                         parameters("user", id)).list();
                 return persons;
             });
             printUsers(recommended);
+            return selectUser(recommended);
         }
     }
 
@@ -356,10 +360,12 @@ public class Neo4jConnector {
         String input;
         while (true) {
             System.out.println("Press the number of the routine you want to select\n" +
-                    "or press 0 to return to the main menu");
+                    "or press r to return to the main menu");
 
             Scanner sc = new Scanner(System.in);
             input = sc.next();
+            if(input.equals("r"))
+                return null;
             if (!input.matches("[0-9.]+"))
                 System.out.println("Please select an existing option!");
             else if ((Integer.parseInt(input)) > followed.size())
@@ -367,12 +373,7 @@ public class Neo4jConnector {
             else
                 break;
         }
-        switch (input) {
-            case "0":
-                return null;
-            default:
-                return followed.get(Integer.parseInt(input)-1).get("routine").get("_id").toString().replace("\"","");
-        }
+        return followed.get(Integer.parseInt(input)-1).get("routine").get("_id").toString().replace("\"","");
     }
 
     //function for unfollow a user (add relation in the db)

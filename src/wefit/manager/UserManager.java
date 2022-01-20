@@ -65,6 +65,7 @@ public class UserManager {
 
     //function for change profile's properties
     public void changeProfile(Document user){
+        System.out.println("USER_ID: " + self.getString("user_id\n"));
         System.out.println("1) Name: " + self.getString("name"));
         System.out.println("2) Gender: " + self.getString("gender"));
         System.out.println("3) Year of birth: " + self.getString("year_of_birth"));
@@ -200,11 +201,14 @@ public class UserManager {
                     if(input.matches("[0-9.]+"))
                         filters.add(mongoDb.getFilter("user", input, "eq"));
                     else {
-                        String id = mongoDb.getUser(input).getString("user_id");
-                        if (id == null) {
-                            System.out.println("Trainer not found");
+                        String id=null;
+                        Document user = mongoDb.getUser(input);
+                        if(user == null){
+                            System.out.println("User not found");
                             break;
                         }
+                        id = user.getString("user_id");
+                        filters.add(mongoDb.getFilter("user", id, "eq"));
                     }
 
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
@@ -218,12 +222,14 @@ public class UserManager {
                     if(input.matches("[0-9.]+"))
                         filters.add(mongoDb.getFilter("trainer", input, "eq"));
                     else {
-                        String id = mongoDb.getUser(input).getString("user_id");
-                        if(id==null){
+                        String id=null;
+                        Document trainer = mongoDb.getUser(input);
+                        if(trainer == null){
                             System.out.println("Trainer not found");
                             break;
                         }
-                        filters.add(mongoDb.getFilter("trainer", id, "eq"));
+                        id = trainer.getString("user_id");
+                        filters.add(mongoDb.getFilter("user", id, "eq"));
                     }
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
@@ -292,7 +298,7 @@ public class UserManager {
 
     //function for set filters for search user(s)
     public void findUser(){
-        System.out.println("\nInsert filters for find a user..");
+        System.out.println("\nInsert filters for find a user or press 8 to see reccomended users..");
         System.out.println("1) User_id");
         System.out.println("2) Name");
         System.out.println("3) Gender");
@@ -300,6 +306,7 @@ public class UserManager {
         System.out.println("5) Trainer");
         System.out.println("6) Height");
         System.out.println("7) Weight");
+        System.out.println("8) See reccomended users");
         System.out.println("0) Search user(s)\n");
         System.out.println("Select an option or press \'r\' to return...");
         Scanner sc = new Scanner(System.in);
@@ -438,6 +445,10 @@ public class UserManager {
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
+                case "8":
+                    String r = neo4j.showRecommended(self.getString("user_id"));
+                    optionsUser(r);
+                    return;
                 case "0":
                     String ret = mongoDb.searchUsers(filters);
                     if(ret==null)
@@ -466,9 +477,11 @@ public class UserManager {
     public void mostFollowedUsers(){
         String input;
         Scanner sc = new Scanner(System.in);
-        System.out.println("Insert the value of n");
+        System.out.println("Insert the value of n or press r to return");
         while(true){
             input = sc.next();
+            if(input.equals("r"))
+                return;
             if(!input.matches("[0-9.]+"))
                 System.out.println("Please insert a numeric value");
             else
@@ -481,9 +494,11 @@ public class UserManager {
     public void mostRatedTrainers(){
         String input;
         Scanner sc = new Scanner(System.in);
-        System.out.println("Insert the value of n");
+        System.out.println("Insert the value of n or press r to return");
         while(true){
             input = sc.next();
+            if(input.equals("r"))
+                return;
             if(!input.matches("[0-9.]+"))
                 System.out.println("Please insert a numeric value");
             else
@@ -513,6 +528,9 @@ public class UserManager {
             else if(ret.startsWith("u:")) {
                 neo4j.unfollowUser(self.getString("user_id"), option.substring(2));
             }
+            else if(ret.startsWith("f:")) {
+                neo4j.followUser(self.getString("user_id"), option.substring(2));
+            }
         }
     }
 
@@ -532,7 +550,7 @@ public class UserManager {
                     "9)  Find n-most followed users\n" +
                     "10) Modify your profile\n" +
                     "11) Log out\n" +
-                    "0) Exit");
+                    "0)  Exit");
             Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {

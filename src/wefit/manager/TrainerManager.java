@@ -44,31 +44,34 @@ public class TrainerManager extends UserManager{
         while(r<8) {
             switch(r) {
                 case 0:
-                    System.out.println("\nInsert the name of the new exercise...");
+                    System.out.println("\nInsert the name of the new exercise or press r to return...");
                     String search_ex = null;
                     try {
                         search_ex = bufferRead.readLine();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
+                    if(search_ex.equals("r"))
+                        return;
                     exerciseName = search_ex;
                     r++;
                     break;
                 case 1:
-                    System.out.println("\nInsert the type of the new exercise...");
+                    System.out.println("\nInsert the type of the new exercise or press r to return...");
                     String search_type = null;
                     try {
                         search_type = bufferRead.readLine();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    if(search_type.equals("r"))
+                        return;
 
                     exerciseType = search_type;
                     r++;
                     break;
                 case 2:
-                    System.out.println("\nSelect the number of the muscle target of the new exercise...");
+                    System.out.println("\nSelect the number of the muscle target of the new exercise or press r to return...");
 
                     for (int i = 0; i < 17; i++) {
                         System.out.println(i + " - " + Muscles[i]);
@@ -77,6 +80,8 @@ public class TrainerManager extends UserManager{
                     try {
                         search_muscle = bufferRead.readLine();
                     } catch (IOException e) { e.printStackTrace(); }
+                    if(search_muscle.equals("r"))
+                        return;
 
                     if (Integer.parseInt(search_muscle) > 17) {
                         System.out.println("\nMuscle target not found... please select again");
@@ -91,19 +96,21 @@ public class TrainerManager extends UserManager{
                     }
                     break;
                 case 3:
-                    System.out.println("\nInsert the equipment of the new exercise...");
+                    System.out.println("\nInsert the equipment of the new exercise or press r to return...");
                     String search_equipment = null;
                     try {
                         search_equipment = bufferRead.readLine();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    if(search_equipment.equals("r"))
+                        return;
 
                     exerciseEquipment = search_equipment;
                     r++;
                     break;
                 case 4:
-                    System.out.println("\nSelect the level of the new exercise...");
+                    System.out.println("\nSelect the level of the new exercise or press r to return...");
                     for (int i = 0; i < 3; i++) {
                         System.out.println(i + " - " + Levels[i]);
                     }
@@ -113,6 +120,8 @@ public class TrainerManager extends UserManager{
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    if(search_level.equals("r"))
+                        return;
 
                     if (Integer.parseInt(search_level) > 3) {
                         System.out.println("\nLevel not valid... please select again");
@@ -127,48 +136,56 @@ public class TrainerManager extends UserManager{
                     }
                     break;
                 case 5:
-                    System.out.println("\nInsert the first image's link of the new exercise...");
+                    System.out.println("\nInsert the first image's link of the new exercise or press r to return...");
                     String search_image1 = null;
                     try {
                         search_image1 = bufferRead.readLine();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    if(search_image1.equals("r"))
+                        return;
 
                     exerciseImage1 = search_image1;
                     r++;
                     break;
                 case 6:
-                    System.out.println("\nInsert the second image's link of the new exercise...");
+                    System.out.println("\nInsert the second image's link of the new exercise or press r to return...");
                     String search_image2 = null;
                     try {
                         search_image2 = bufferRead.readLine();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    if(search_image2.equals("r"))
+                        return;
 
                     exerciseImage2 = search_image2;
                     r++;
                     break;
                 case 7:
-                    System.out.println("\nWrite an explanation of the new exercise...");
+                    System.out.println("\nWrite an explanation of the new exercise or press r to return...");
                     String search_details = null;
                     try {
                         search_details = bufferRead.readLine();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    if(search_details.equals("r"))
+                        return;
 
                     exerciseDetails = search_details;
                     r++;
                     break;
             }
         }
-
+        System.out.println("Press any key to insert or press r to return..");
+        if(sc.next().equals("r"))
+            return;
 
         List<Document> images = new ArrayList<Document>();
-        images.add(new Document("image1", exerciseImage1));
-        images.add(new Document("image2", exerciseImage2));
+        images.add(new Document("image", exerciseImage1));
+        images.add(new Document("image", exerciseImage2));
 
         Document newExercise = new Document();
         newExercise.append("name", exerciseName);
@@ -182,7 +199,6 @@ public class TrainerManager extends UserManager{
         mongoDb.insertNewExercise(newExercise);
     }
 
-
     //change a user from normal user to trainer
     public void addTrainer(){
         System.out.println("Insert the name or the user_id of the user you want to promote or press r to return..");
@@ -193,7 +209,7 @@ public class TrainerManager extends UserManager{
             search_name = bufferRead.readLine();
         } catch (IOException e) {e.printStackTrace();}
 
-        if(search_name == null)
+        if(search_name.equals("r"))
             return;
         Document user = new Document();
         if(!search_name.matches("[0-9.]+"))
@@ -212,15 +228,23 @@ public class TrainerManager extends UserManager{
         Scanner sc = new Scanner(System.in);
 
         // insert name and query the db for the user
-        System.out.println("\nInsert the name of the user or the user_id...");
+        System.out.println("\nInsert the name of the user or the user_id or press r to return...");
         String search_name = null;
         try {
             search_name = bufferRead.readLine();
         } catch (IOException e) {e.printStackTrace();}
-
+        if(search_name.equals("r"))
+            return;
         String user = search_name;
-        if(!search_name.matches("[0-9.]+"))
-            user = mongoDb.getUser(search_name).getString("user_id");
+        if(!search_name.matches("[0-9.]+")) {
+            Document d = mongoDb.getUser(search_name);
+            if(d != null)
+                user = d.getString("user_id");
+            else {
+                System.out.println("User not found");
+                return;
+            }
+        }
 
         // create variables for building the document
         ArrayList<Document> exercises = new ArrayList<Document>();
@@ -230,22 +254,29 @@ public class TrainerManager extends UserManager{
         int n = 0;
 
         // cycle all the 17 muscle groups to insert one exercise each
-        while(n<17){
-            exercises.add(insertExercise(Muscles[n],null));
+        while(n<1){
+            Document d = insertExercise(Muscles[n],null);
+            if(d==null)
+                return;
+            exercises.add(d);
             n++;
         }
 
         // two distinct cycles merged to build the warmup and stretching routines
         while(running<2){
-            Document exercise = new Document();
+            Document exercise = null;
             String fetch;
             if(running == 0){
                 System.out.print("\nAdding warm_um exercises..");
                 exercise = insertExercise(null, "Cardio");
+                if(exercise==null)
+                    return;
             }
             if(running == 1) {
                 System.out.print("\nAdding stretching exercises...");
                 exercise = insertExercise(null, "Stretching");
+                if(exercise==null)
+                    return;
             }
 
             if(running == 0) warmup.add(exercise);
@@ -260,19 +291,27 @@ public class TrainerManager extends UserManager{
         new_routine.append("user", user);
         new_routine.append("trainer", self.getString("user_id"));
 
-        System.out.println("Insert the level of the routine...");
+        System.out.println("Insert the level of the routine or press r to return...");
         String fetch = sc.next();
+        if(fetch.equals("r"))
+            return;
         fetch = fetch.replace(fetch.substring(0,1), fetch.substring(0,1).toUpperCase());
         new_routine.append("level", fetch);
 
-        System.out.println("Insert the work time (sec)...");
+        System.out.println("Insert the work time (sec) or press r to return...");
         fetch = sc.next();
+        if(fetch.equals("r"))
+            return;
         new_routine.append("work_time(sec)", Integer.parseInt(fetch));
-        System.out.println("Insert the rest time (sec)...");
+        System.out.println("Insert the rest time (sec) or press r to return...");
         fetch = sc.next();
+        if(fetch.equals("r"))
+            return;
         new_routine.append("rest_time(sec)", Integer.parseInt(fetch));
-        System.out.println("Insert the number of repetitions of the routine...");
+        System.out.println("Insert the number of repetitions of the routine or press r to return...");
         fetch = sc.next();
+        if(fetch.equals("r"))
+            return;
         new_routine.append("repeat", Integer.parseInt(fetch));
 
         new_routine.append("warm_up", warmup);
@@ -284,6 +323,10 @@ public class TrainerManager extends UserManager{
         new_routine.append("num_votes", 0);
         new_routine.append("vote", 0);
 
+        System.out.println("Press any key to insert or press r to return..");
+        fetch = sc.next();
+        if(fetch.equals("r"))
+            return;
         mongoDb.insertRoutine(new_routine);
         neo4j.insertRoutine(new_routine);
     }
@@ -296,13 +339,14 @@ public class TrainerManager extends UserManager{
         String fetch = null;
         Document ex;
         while(true) {
-            if(muscle == null)  System.out.println("\nInsert an exercise's name..");
-            else System.out.println("\nInsert an exercise's name per muscle " + muscle + "...");
+            if(muscle == null)  System.out.println("\nInsert an exercise's name or press r to return..");
+            else System.out.println("\nInsert an exercise's name per muscle " + muscle + " or press r to return...");
 
             try {
                 fetch = bufferRead.readLine();
             } catch (IOException e) {e.printStackTrace();}
-
+            if(fetch.equals("r"))
+                return null;
             ex = mongoDb.searchExercises(fetch, false, muscle, type);
             if(ex!=null)
                 break;
@@ -398,8 +442,16 @@ public class TrainerManager extends UserManager{
         String threshold;
 
         Scanner sc = new Scanner(System.in);
-        System.out.println("Insert threshold year for the age...");
-        threshold = sc.next();
+        System.out.println("Insert threshold year for the age or press r to return...");
+        while(true) {
+            threshold = sc.next();
+            if (threshold.equals("r"))
+                return;
+            else if(!threshold.matches("[0-9.]+"))
+                System.out.println("Please insert a correct number");
+            else
+                break;
+        }
 
         mongoDb.showAvgAgeLvl(threshold);
     }
@@ -427,9 +479,20 @@ public class TrainerManager extends UserManager{
 
     public void showMostFidelityUsers(){
         int num;
-        System.out.println("Insert the limit of the most fidelity user you want to see...");
-        Scanner sc = new Scanner(System.in);
-        num = Integer.parseInt(sc.next());
+        System.out.println("Insert the limit of the most fidelity user you want to see or press r to return...");
+
+        while(true) {
+            Scanner sc = new Scanner(System.in);
+            String input = sc.next();
+            if (input.equals("r"))
+                return;
+            else if(!input.matches("[0-9.]+"))
+                System.out.println("Please insert a number");
+            else {
+                num = Integer.parseInt(input);
+                break;
+            }
+        }
         String ret = neo4j.showMostFidelityUsers(num);
         optionsUser(ret);
     }

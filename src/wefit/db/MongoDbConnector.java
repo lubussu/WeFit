@@ -111,13 +111,11 @@ public class MongoDbConnector {
             return docs.get(0);
         System.out.println("\nList of users with the insert name");
         for(Document document :  docs){
-            System.out.println(document.getString("user_id"));
+            System.out.println(document.getString("user_id")+"\t"+document.getString("name"));
         }
-        System.out.println("\nSelect a user_id or press r to retur");
+        System.out.println("\nSelect a user_id");
         Scanner sc = new Scanner(System.in);
         String id = sc.next();
-        if(id.equals("r"))
-            return null;
         Bson id_condition = new Document("$eq", id);
         Bson id_filter = new Document("user_id", id_condition);
         for(Document document :  users.find(id_filter)){
@@ -263,7 +261,9 @@ public class MongoDbConnector {
         ArrayList<Document> docs = new ArrayList<>();
         workout.aggregate(filters).into(docs);
         if(docs.size()==0){
-            System.out.println("Exercise not found\n");
+            System.out.println("Exercise not found\nPress any key to continue..");
+            Scanner sc = new Scanner(System.in);
+            sc.next();
             return null;
         }
 
