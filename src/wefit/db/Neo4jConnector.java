@@ -64,7 +64,7 @@ public class Neo4jConnector {
         try ( Session session = graph_driver.session() ) {
             followed = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
                 List<Record> routines;
-                String c_day = LocalDate.now().toString();
+
 
                 routines = tx.run("MATCH (:User {user_id: $user}) -[r:COMMENT]->(b:Routine) RETURN b AS routine",
                         parameters("user",user)).list();
@@ -84,9 +84,9 @@ public class Neo4jConnector {
         try ( Session session = graph_driver.session() ) {
             followed = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
                 List<Record> routines;
-                String c_day = LocalDate.now().toString();
 
-                routines = tx.run("MATCH (n:Routine {trainer: $trainer}) RETURN n AS routine",
+
+                routines = tx.run("MATCH (a:User {user_id: $trainer}) -[:CREATE_ROUTINE]->(b:Routine) return b AS routine",
                         parameters("trainer",trainer)).list();
 
                 if(routines == null) {
