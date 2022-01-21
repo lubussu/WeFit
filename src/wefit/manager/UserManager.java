@@ -36,6 +36,11 @@ public class UserManager {
         this.neo4j = neo4j = new Neo4jConnector("bolt://localhost:7687", "neo4j", "wefit" );
     }
 
+    //show routines commented by the logged user
+    public void showRoutinesCommented(String userID) {
+        neo4j.searchRoutinesCommentedByUser(userID);
+    }
+
     //function for comment a routine
     public void addComment(String routine_id){
         Document comment = new Document();
@@ -567,7 +572,7 @@ public class UserManager {
                     showFollowers();
                     break;
                 case "5":
-                    System.out.println("You have not yet commented any routine...\n");
+                    showRoutinesCommented(self.getString("user_id"));
                     break;
                 case "6":
                     findRoutine();

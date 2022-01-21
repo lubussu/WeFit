@@ -86,10 +86,11 @@ public class Neo4jConnector {
                 List<Record> routines;
                 String c_day = LocalDate.now().toString();
 
-                routines = tx.run("MATCH (a:Routine) WHERE a.trainer = $trainer RETURN a AS routine",
+                routines = tx.run("MATCH (n:Routine {trainer: $trainer}) RETURN n AS routine",
                         parameters("trainer",trainer)).list();
 
-                ArrayList<Record> results = new ArrayList<>();
+                if(routines == null) {
+                    System.out.println("You have not created any routine yet...\n");}
                 return routines;
             });
         };
