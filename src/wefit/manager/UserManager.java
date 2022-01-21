@@ -42,16 +42,14 @@ public class UserManager {
     }
 
     //function for comment a routine
-    public void addComment(String routine_id){
+    public void addComment(String routine_id) throws IOException {
         Document comment = new Document();
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         String input = null;
-        try {
-            System.out.println("Insert the comment you want to add or press r to return...");
-            input = bufferRead.readLine();
-            if(input.equals("r"))
-                return;
-        } catch (IOException e) { e.printStackTrace();}
+        System.out.println("Insert the comment you want to add or press r to return...");
+        input = bufferRead.readLine();
+        if(input.equals("r"))
+            return;
         comment.append("Comment", input).append("Time", LocalDate.now().toString()).append("user", self.getString("user_id"));
         mongoDb.insertComment(comment, routine_id);
     }
@@ -69,7 +67,7 @@ public class UserManager {
     }
 
     //function for change profile's properties
-    public void changeProfile(Document user){
+    public void changeProfile(Document user) throws IOException {
         System.out.println("USER_ID: " + self.getString("user_id\n"));
         System.out.println("1) Name: " + self.getString("name"));
         System.out.println("2) Gender: " + self.getString("gender"));
@@ -91,9 +89,7 @@ public class UserManager {
             switch (input) {
                 case "1": {
                     System.out.println("Insert your full name...");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) {e.printStackTrace();}
+                    input = bufferRead.readLine();
 
                     //System.out.println("...and your surname");
                     //input += " " + sc.next();
@@ -132,27 +128,21 @@ public class UserManager {
                 }
                 case "6": {
                     System.out.println("Insert your training...");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) {e.printStackTrace();}
+                    input = bufferRead.readLine();
                     self.append("train", input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "7": {
                     System.out.println("Insert your training background...");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) {e.printStackTrace();}
+                    input = bufferRead.readLine();
                     self.append("background", input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "8": {
                     System.out.println("Insert your experience...");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) {e.printStackTrace();}
+                    input = bufferRead.readLine();
                     self.append("experience", input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
@@ -182,7 +172,7 @@ public class UserManager {
     }
 
     //function for set filters for search routine(s)
-    public void findRoutine(){
+    public void findRoutine() throws IOException {
         System.out.println("\nInsert filters for find a routine..");
         System.out.println("1) User");
         System.out.println("2) Trainer");
@@ -200,9 +190,7 @@ public class UserManager {
             switch (input) {
                 case "1": {
                     System.out.println("Insert the \'user_id\' or the \'name\'");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) { e.printStackTrace();}
+                    input = bufferRead.readLine();
                     if(input.matches("[0-9.]+"))
                         filters.add(mongoDb.getFilter("user", input, "eq"));
                     else {
@@ -221,9 +209,7 @@ public class UserManager {
                 }
                 case "2": {
                     System.out.println("Insert the \'user_id\' or the \'name\' of the trainer");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) { e.printStackTrace();}
+                    input = bufferRead.readLine();
                     if(input.matches("[0-9.]+"))
                         filters.add(mongoDb.getFilter("trainer", input, "eq"));
                     else {
@@ -302,7 +288,7 @@ public class UserManager {
     }
 
     //function for set filters for search user(s)
-    public void findUser(){
+    public void findUser() throws IOException {
         System.out.println("\nInsert filters for find a user or press 8 to see reccomended users..");
         System.out.println("1) User_id");
         System.out.println("2) Name");
@@ -323,9 +309,7 @@ public class UserManager {
             switch (input) {
                 case "1": {
                     System.out.println("Insert the \'user_id\'");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) { e.printStackTrace();}
+                    input = bufferRead.readLine();
                     filters.add(mongoDb.getFilter("user_id", input, "eq"));
 
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
@@ -333,9 +317,7 @@ public class UserManager {
                 }
                 case "2": {
                     System.out.println("Insert the \'name\' of the user");
-                    try {
-                        input = bufferRead.readLine();
-                    } catch (IOException e) { e.printStackTrace();}
+                    input = bufferRead.readLine();
                     filters.add(mongoDb.getFilter("name", input, "eq"));
 
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
@@ -471,15 +453,7 @@ public class UserManager {
         }
     }
 
-    public void followRecommended(String id){
-        System.out.println("Insert the ID of the user you want to follow...");
-        Scanner sc = new Scanner(System.in);
-        String input;
-        input = sc.next();
-        neo4j.followUser(id, input);
-    }
-
-    public void mostFollowedUsers(){
+    public void mostFollowedUsers() throws IOException {
         String input;
         Scanner sc = new Scanner(System.in);
         System.out.println("Insert the value of n or press r to return");
@@ -496,7 +470,7 @@ public class UserManager {
         optionsUser(ret);
     }
 
-    public void mostRatedTrainers(){
+    public void mostRatedTrainers() throws IOException {
         String input;
         Scanner sc = new Scanner(System.in);
         System.out.println("Insert the value of n or press r to return");
@@ -513,7 +487,7 @@ public class UserManager {
         optionsUser(ret);
     }
 
-    public void optionsUser(String option){
+    public void optionsUser(String option) throws IOException {
         if(option==null)
             return;
         if(option.startsWith("r:")) { //the user want to see routine details of one of followed users
@@ -539,7 +513,7 @@ public class UserManager {
         }
     }
 
-    public boolean session(){
+    public boolean session() throws IOException {
         System.out.println("WELCOME " + self.getString("name"));
         boolean running = true;
         while(running) {
@@ -674,7 +648,7 @@ public class UserManager {
         return true;
     }
 
-    public void showCurrentRoutine(){
+    public void showCurrentRoutine() throws IOException {
         //mongoDb.showCurrentRoutine(self.getString("user_id"));
         String routine = neo4j.showRoutines(self.getString("user_id"), "current");
         if(routine!=null) {
@@ -688,17 +662,17 @@ public class UserManager {
         }
     }
 
-    public void showFollowedUsers(){
+    public void showFollowedUsers() throws IOException {
         String ret = neo4j.showFollowUsers(self.getString("user_id"), "followed");
         optionsUser(ret);
     }
 
-    public void showFollowers(){
+    public void showFollowers() throws IOException {
         String ret = neo4j.showFollowUsers(self.getString("user_id"), "followers");
         optionsUser(ret);
     }
 
-    public void showPastRoutines(){
+    public void showPastRoutines() throws IOException {
         //mongoDb.showPastRoutines(self.getString("user_id"));}
         String routine = neo4j.showRoutines(self.getString("user_id"), "current");
         if(routine!=null) {

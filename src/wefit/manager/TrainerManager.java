@@ -44,7 +44,7 @@ public class TrainerManager extends UserManager{
 
     }
 
-    public void addExercise(){
+    public void addExercise() throws IOException {
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         Scanner sc = new Scanner(System.in);
         int r = 0;
@@ -62,11 +62,7 @@ public class TrainerManager extends UserManager{
                 case 0:
                     System.out.println("\nInsert the name of the new exercise or press r to return...");
                     String search_ex = null;
-                    try {
-                        search_ex = bufferRead.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    search_ex = bufferRead.readLine();
                     if(search_ex.equals("r"))
                         return;
                     exerciseName = search_ex;
@@ -75,11 +71,7 @@ public class TrainerManager extends UserManager{
                 case 1:
                     System.out.println("\nInsert the type of the new exercise or press r to return...");
                     String search_type = null;
-                    try {
-                        search_type = bufferRead.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    search_type = bufferRead.readLine();
                     if(search_type.equals("r"))
                         return;
 
@@ -93,9 +85,7 @@ public class TrainerManager extends UserManager{
                         System.out.println(i + " - " + Muscles[i]);
                     }
                     String search_muscle = null;
-                    try {
-                        search_muscle = bufferRead.readLine();
-                    } catch (IOException e) { e.printStackTrace(); }
+                    search_muscle = bufferRead.readLine();
                     if(search_muscle.equals("r"))
                         return;
 
@@ -114,11 +104,7 @@ public class TrainerManager extends UserManager{
                 case 3:
                     System.out.println("\nInsert the equipment of the new exercise or press r to return...");
                     String search_equipment = null;
-                    try {
-                        search_equipment = bufferRead.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    search_equipment = bufferRead.readLine();
                     if(search_equipment.equals("r"))
                         return;
 
@@ -131,11 +117,7 @@ public class TrainerManager extends UserManager{
                         System.out.println(i + " - " + Levels[i]);
                     }
                     String search_level = null;
-                    try {
-                        search_level = bufferRead.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    search_level = bufferRead.readLine();
                     if(search_level.equals("r"))
                         return;
 
@@ -154,11 +136,7 @@ public class TrainerManager extends UserManager{
                 case 5:
                     System.out.println("\nInsert the first image's link of the new exercise or press r to return...");
                     String search_image1 = null;
-                    try {
-                        search_image1 = bufferRead.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    search_image1 = bufferRead.readLine();
                     if(search_image1.equals("r"))
                         return;
 
@@ -168,11 +146,7 @@ public class TrainerManager extends UserManager{
                 case 6:
                     System.out.println("\nInsert the second image's link of the new exercise or press r to return...");
                     String search_image2 = null;
-                    try {
-                        search_image2 = bufferRead.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    search_image2 = bufferRead.readLine();
                     if(search_image2.equals("r"))
                         return;
 
@@ -182,11 +156,7 @@ public class TrainerManager extends UserManager{
                 case 7:
                     System.out.println("\nWrite an explanation of the new exercise or press r to return...");
                     String search_details = null;
-                    try {
-                        search_details = bufferRead.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    search_details = bufferRead.readLine();
                     if(search_details.equals("r"))
                         return;
 
@@ -216,15 +186,12 @@ public class TrainerManager extends UserManager{
     }
 
     //change a user from normal user to trainer
-    public void addTrainer(){
+    public void addTrainer() throws IOException {
         System.out.println("Insert the name or the user_id of the user you want to promote or press r to return..");
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
 
         String search_name = null;
-        try {
-            search_name = bufferRead.readLine();
-        } catch (IOException e) {e.printStackTrace();}
-
+        search_name = bufferRead.readLine();
         if(search_name.equals("r"))
             return;
         Document user = new Document();
@@ -239,16 +206,14 @@ public class TrainerManager extends UserManager{
     }
 
     // Create a routine for a user
-    public void createRoutine(){
+    public void createRoutine() throws IOException {
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         Scanner sc = new Scanner(System.in);
 
         // insert name and query the db for the user
         System.out.println("\nInsert the name of the user or the user_id or press r to return...");
         String search_name = null;
-        try {
-            search_name = bufferRead.readLine();
-        } catch (IOException e) {e.printStackTrace();}
+        search_name = bufferRead.readLine();
         if(search_name.equals("r"))
             return;
         String user = search_name;
@@ -348,7 +313,7 @@ public class TrainerManager extends UserManager{
     }
 
     //function for insert an exercise in a new routine
-    public Document insertExercise(String muscle, String type){
+    public Document insertExercise(String muscle, String type) throws IOException {
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         Scanner sc = new Scanner(System.in);
         Document exercise = new Document();
@@ -358,9 +323,7 @@ public class TrainerManager extends UserManager{
             if(muscle == null)  System.out.println("\nInsert an exercise's name or press r to return..");
             else System.out.println("\nInsert an exercise's name per muscle " + muscle + " or press r to return...");
 
-            try {
-                fetch = bufferRead.readLine();
-            } catch (IOException e) {e.printStackTrace();}
+            fetch = bufferRead.readLine();
             if(fetch.equals("r"))
                 return null;
             ex = mongoDb.searchExercises(fetch, false, muscle, type);
@@ -405,7 +368,7 @@ public class TrainerManager extends UserManager{
         mongoDb.mostVotedPresentExercises(max_vote, max_ex);
     }
 
-    public boolean sessionTrainer(){
+    public boolean sessionTrainer() throws IOException {
         System.out.println("WELCOME " + self.getString("name"));
         boolean running = true;
         while(running) {
@@ -511,7 +474,7 @@ public class TrainerManager extends UserManager{
         System.out.println();
     }
 
-    public void showMostFidelityUsers(){
+    public void showMostFidelityUsers() throws IOException {
         int num;
         System.out.println("Insert the limit of the most fidelity user you want to see or press r to return...");
 

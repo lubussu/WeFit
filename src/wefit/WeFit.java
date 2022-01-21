@@ -63,13 +63,17 @@ public class WeFit {
 
         if (user != null && user.getString("trainer").equals("no")) {
             UserManager uM = new UserManager(user, mongoDb);
-            if(uM.session()==false) //if session return false the use want to exit
-                exit(1);
+            try {
+                if(uM.session()==false) //if session return false the use want to exit
+                    exit(1);
+            } catch (IOException e) {e.printStackTrace();}
         }
         else if(user != null && user.getString("trainer").equals("yes")) {
             TrainerManager tM = new TrainerManager(user, mongoDb);
-            if(tM.sessionTrainer()==false) //if session return false the use want to exit
-                exit(1);
+            try {
+                if(tM.sessionTrainer()==false) //if session return false the use want to exit
+                    exit(1);
+            } catch (IOException e) {e.printStackTrace();}
         }
         else{
             System.out.println("Incorrect email or password, please retry!");

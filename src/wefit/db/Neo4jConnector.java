@@ -94,7 +94,7 @@ public class Neo4jConnector {
                 return routines;
             });
         };
-        printRoutines(followed, 50);
+        printRoutines(followed, 10);
     }
 
     //function for vote a routine (add relation in the db)
