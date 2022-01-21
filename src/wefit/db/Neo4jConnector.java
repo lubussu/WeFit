@@ -58,6 +58,26 @@ public class Neo4jConnector {
         System.out.println("User " + user +" successfully follow!");
     }
 
+    //show all the routines commented by a given user
+    public void searchRoutinesCommentedByUser(String user) {
+        ArrayList<Record> followed = new ArrayList<>();
+        try ( Session session = graph_driver.session() ) {
+            followed = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
+                List<Record> routines;
+                String c_day = LocalDate.now().toString();
+
+                routines = tx.run("MATCH (:User {user_id: $user}) -[r:COMMENT]->(b:Routine) RETURN b AS routine",
+                        parameters("user",user)).list();
+
+                if(routines == null) {
+                    System.out.println("You have not commented any routine yet...\n");}
+                return routines;
+            });
+        };
+        printRoutines(followed, 10);
+    }
+
+
     //show all the routines of a given trainer
     public void searchRoutinesByTrainer(String trainer) {
         ArrayList<Record> followed = new ArrayList<>();
