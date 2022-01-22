@@ -29,7 +29,6 @@ public class UserManager {
     protected MongoDbConnector mongoDb;
     protected Neo4jConnector neo4j;
 
-
     public UserManager(Document user, MongoDbConnector mongo){
         this.self = user;
         this.mongoDb = mongo;
@@ -68,7 +67,7 @@ public class UserManager {
 
     //function for change profile's properties
     public void changeProfile(Document user) throws IOException {
-        System.out.println("USER_ID: " + self.getString("user_id\n"));
+        System.out.println("USER_ID: " + self.getString("user_id"));
         System.out.println("1) Name: " + self.getString("name"));
         System.out.println("2) Gender: " + self.getString("gender"));
         System.out.println("3) Year of birth: " + self.getString("year_of_birth"));
@@ -649,7 +648,6 @@ public class UserManager {
     }
 
     public void showCurrentRoutine() throws IOException {
-        //mongoDb.showCurrentRoutine(self.getString("user_id"));
         String routine = neo4j.showRoutines(self.getString("user_id"), "current");
         if(routine!=null) {
             String option = mongoDb.showRoutineDetails(routine);
@@ -674,7 +672,7 @@ public class UserManager {
 
     public void showPastRoutines() throws IOException {
         //mongoDb.showPastRoutines(self.getString("user_id"));}
-        String routine = neo4j.showRoutines(self.getString("user_id"), "current");
+        String routine = neo4j.showRoutines(self.getString("user_id"), "past");
         if(routine!=null) {
             String option = mongoDb.showRoutineDetails(routine);
             if(option==null)
