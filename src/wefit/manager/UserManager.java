@@ -7,7 +7,9 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import wefit.db.MongoDbConnector;
 import wefit.db.Neo4jConnector;
+import wefit.entities.User;
 
+import javax.swing.text.html.HTMLDocument;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -25,11 +27,11 @@ import static com.mongodb.client.model.Projections.fields;
 
 public class UserManager {
 
-    protected Document self;
+    protected User self;
     protected MongoDbConnector mongoDb;
     protected Neo4jConnector neo4j;
 
-    public UserManager(Document user, MongoDbConnector mongo){
+    public UserManager(User user, MongoDbConnector mongo){
         this.self = user;
         this.mongoDb = mongo;
         this.neo4j = neo4j = new Neo4jConnector("bolt://localhost:7687", "neo4j", "wefit" );
@@ -49,7 +51,7 @@ public class UserManager {
         input = bufferRead.readLine();
         if(input.equals("r"))
             return;
-        comment.append("Comment", input).append("Time", LocalDate.now().toString()).append("user", self.getString("user_id"));
+        comment.append("Comment", input).append("Time", LocalDate.now().toString()).append("user", self.getUser_id());
         mongoDb.insertComment(comment, routine_id);
     }
 
@@ -62,22 +64,22 @@ public class UserManager {
             return;
         int vote = Integer.parseInt(vote_string);
         mongoDb.insertVote(routine_id, vote);
-        neo4j.insertVote(self.getString("athlete_id"), routine_id, vote);
+        neo4j.insertVote(self.getUser_id(), routine_id, vote);
     }
 
     //function for change profile's properties
-    public void changeProfile(Document user) throws IOException {
-        System.out.println("USER_ID: " + self.getString("user_id"));
-        System.out.println("1) Name: " + self.getString("name"));
-        System.out.println("2) Gender: " + self.getString("gender"));
-        System.out.println("3) Year of birth: " + self.getString("year_of_birth"));
-        System.out.println("4) Height: " + self.getString("height"));
-        System.out.println("5) Weight: " + self.getString("weight"));
-        System.out.println("6) Training: " + self.getString("train"));
-        System.out.println("7) Background: " + self.getString("background"));
-        System.out.println("8) Experience: " + self.getString("experience"));
-        System.out.println("9) Email: " + self.getString("email"));
-        System.out.println("10) Password: " + self.getString("password"));
+    public void changeProfile() throws IOException {
+        System.out.println("USER_ID: " + self.getUser_id());
+        System.out.println("1) Name: " + self.getName());
+        System.out.println("2) Gender: " + self.getGender());
+        System.out.println("3) Year of birth: " + self.getYear_of_birth());
+        System.out.println("4) Height: " + self.getHeight());
+        System.out.println("5) Weight: " + self.getWeight());
+        System.out.println("6) Training: " + self.getTrain());
+        System.out.println("7) Background: " + self.getBackground());
+        System.out.println("8) Experience: " + self.getExperience());
+        System.out.println("9) Email: " + self.getEmail());
+        System.out.println("10) Password: " + self.getPassword());
         System.out.println("0) Save your changes\n");
         System.out.println("Select an option or press \'r\' to return...");
         Scanner sc = new Scanner(System.in);
@@ -89,80 +91,76 @@ public class UserManager {
                 case "1": {
                     System.out.println("Insert your full name...");
                     input = bufferRead.readLine();
-
-                    //System.out.println("...and your surname");
-                    //input += " " + sc.next();
-                    self.append("name", input);
-                    //System.out.println(self.getString("name"));
+                    self.setName(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "2": {
                     System.out.println("Insert your gender...");
                     input = sc.next();
-                    self.append("gender", input);
+                    self.setGender(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "3": {
                     System.out.println("Insert your year of birth...");
                     input = sc.next();
-                    self.append("year_of_birth", input);
+                    self.setYear_of_birth(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "4": {
                     System.out.println("Insert your height...");
                     input = sc.next();
-                    self.append("height", input);
+                    self.setHeight(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "5": {
                     System.out.println("Insert your weight...");
                     input = sc.next();
-                    self.append("weight", input);
+                    self.setWeight(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "6": {
                     System.out.println("Insert your training...");
                     input = bufferRead.readLine();
-                    self.append("train", input);
+                    self.setTrain(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "7": {
                     System.out.println("Insert your training background...");
                     input = bufferRead.readLine();
-                    self.append("background", input);
+                    self.setBackground(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "8": {
                     System.out.println("Insert your experience...");
                     input = bufferRead.readLine();
-                    self.append("experience", input);
+                    self.setExperience(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "9": {
                     System.out.println("Insert your new email...");
                     input = sc.next();
-                    self.append("email", input);
+                    self.setEmail(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "10": {
                     System.out.println("Insert your new password...");
                     input = sc.next();
-                    self.append("password", input);
+                    self.setPassword(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "0":
-                    mongoDb.changeProfile(user);
-                    neo4j.changeProfile(user);
+                    mongoDb.changeProfile(self);
+                    neo4j.changeProfile(self);
                     return;
                 case "r":
                     return;
@@ -432,7 +430,7 @@ public class UserManager {
                     break;
                 }
                 case "8":
-                    String r = neo4j.showRecommended(self.getString("user_id"));
+                    String r = neo4j.showRecommended(self.getUser_id());
                     optionsUser(r);
                     return;
                 case "0":
@@ -440,9 +438,9 @@ public class UserManager {
                     if(ret==null)
                         return;
                     else if(ret.startsWith("u:")) // the user want to see details of one user
-                        neo4j.unfollowUser(self.getString("user_id"), ret.substring(2));
+                        neo4j.unfollowUser(self.getUser_id(), ret.substring(2));
                     else if(ret.startsWith("f:"))
-                        neo4j.followUser(self.getString("user_id"), ret.substring(2));
+                        neo4j.followUser(self.getUser_id(), ret.substring(2));
                     return;
                 case "r":
                     return;
@@ -504,16 +502,16 @@ public class UserManager {
             if(ret==null)
                 return;
             else if(ret.startsWith("u:")) {
-                neo4j.unfollowUser(self.getString("user_id"), option.substring(2));
+                neo4j.unfollowUser(self.getUser_id(), option.substring(2));
             }
             else if(ret.startsWith("f:")) {
-                neo4j.followUser(self.getString("user_id"), option.substring(2));
+                neo4j.followUser(self.getUser_id(), option.substring(2));
             }
         }
     }
 
     public boolean session() throws IOException {
-        System.out.println("WELCOME " + self.getString("name"));
+        System.out.println("WELCOME " + self.getName());
         boolean running = true;
         while(running) {
             System.out.println("\nWhat do you need?\n" +
@@ -545,7 +543,7 @@ public class UserManager {
                     showFollowers();
                     break;
                 case "5":
-                    showRoutinesCommented(self.getString("user_id"));
+                    showRoutinesCommented(self.getUser_id());
                     break;
                 case "6":
                     findRoutine();
@@ -560,7 +558,7 @@ public class UserManager {
                     mostFollowedUsers();
                     break;
                 case "10":
-                    changeProfile(self);
+                    changeProfile();
                     break;
                 case "11":
                     running = false;
@@ -630,11 +628,7 @@ public class UserManager {
         if(password.equals("r"))
             return true;
         int user = mongoDb.lastUser();
-        self = new Document();
-        self.append("user_id", Integer.toString(user));
-        self.append("name", name).append("gender", gender).append("year_of_birth", yob).append("height", height).append("weight", weight);
-        self.append("train", training).append("background", bg).append("experience", exp).append("email", email).append("password", password);
-        self.append("level", level).append("trainer", "no");
+        self = new User(name, gender, yob, height, weight, training, bg, exp, email, password, level, "no", Integer.toString(user));
 
         mongoDb.signUp(self);
         neo4j.insertUser(self);
@@ -648,7 +642,7 @@ public class UserManager {
     }
 
     public void showCurrentRoutine() throws IOException {
-        String routine = neo4j.showRoutines(self.getString("user_id"), "current");
+        String routine = neo4j.showRoutines(self.getUser_id(), "current");
         if(routine!=null) {
             String option = mongoDb.showRoutineDetails(routine);
             if(option==null)
@@ -661,18 +655,18 @@ public class UserManager {
     }
 
     public void showFollowedUsers() throws IOException {
-        String ret = neo4j.showFollowUsers(self.getString("user_id"), "followed");
+        String ret = neo4j.showFollowUsers(self.getUser_id(), "followed");
         optionsUser(ret);
     }
 
     public void showFollowers() throws IOException {
-        String ret = neo4j.showFollowUsers(self.getString("user_id"), "followers");
+        String ret = neo4j.showFollowUsers(self.getUser_id(), "followers");
         optionsUser(ret);
     }
 
     public void showPastRoutines() throws IOException {
         //mongoDb.showPastRoutines(self.getString("user_id"));}
-        String routine = neo4j.showRoutines(self.getString("user_id"), "past");
+        String routine = neo4j.showRoutines(self.getUser_id(), "past");
         if(routine!=null) {
             String option = mongoDb.showRoutineDetails(routine);
             if(option==null)

@@ -3,6 +3,7 @@ package wefit.manager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import wefit.db.MongoDbConnector;
+import wefit.entities.User;
 
 import javax.print.Doc;
 import java.io.BufferedReader;
@@ -24,7 +25,7 @@ public class TrainerManager extends UserManager{
     private String[] Muscles = {"Shoulders", "Traps", "Biceps", "Neck", "Lower Back", "Adductors", "Forearms", "Hamstrings", "Lats", "Middle Back", "Glutes", "Chest", "Abdominals", "Quadriceps", "Abductors", "Calves", "Triceps"};
     private String[] Levels = {"Beginner", "Intermediate", "Expert"};
 
-    public TrainerManager(Document trainer, MongoDbConnector mongo){
+    public TrainerManager(User trainer, MongoDbConnector mongo){
         super(trainer, mongo);
     }
 
@@ -194,15 +195,17 @@ public class TrainerManager extends UserManager{
         search_name = bufferRead.readLine();
         if(search_name.equals("r"))
             return;
-        Document user = new Document();
-        if(!search_name.matches("[0-9.]+"))
-            user = mongoDb.getUser(search_name);
 
-        user.remove("trainer");
-        user.append("trainer", "yes");
+        User user;
 
-        mongoDb.changeProfile(user);
-        neo4j.changeProfile(user);
+        if(!search_name.matches("[0-9.]+")) {
+            user = new User(mongoDb.getUser(search_name));
+
+            user.setTrainer("yes");
+
+            mongoDb.changeProfile(user);
+            neo4j.changeProfile(user);
+        }
     }
 
     // Create a routine for a user
@@ -270,7 +273,7 @@ public class TrainerManager extends UserManager{
         // create and append to the document all the data
         Document new_routine = new Document();
         new_routine.append("user", user);
-        new_routine.append("trainer", self.getString("user_id"));
+        new_routine.append("trainer", self.getUser_id());
 
         System.out.println("Insert the level of the routine or press r to return...");
         String fetch = sc.next();
@@ -369,7 +372,7 @@ public class TrainerManager extends UserManager{
     }
 
     public boolean sessionTrainer() throws IOException {
-        System.out.println("WELCOME " + self.getString("name"));
+        System.out.println("WELCOME " + self.getName());
         boolean running = true;
         while(running) {
             System.out.println("\nWhat do you need?\n" +
@@ -391,7 +394,7 @@ public class TrainerManager extends UserManager{
             String input = sc.next();
             switch (input) {
                 case "1":
-                    findRoutines(self.getString("user_id"));
+                    findRoutines(self.getUser_id());
                     break;
                 case "2":
                     createRoutine();

@@ -7,6 +7,7 @@ import org.neo4j.driver.*;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import wefit.db.MongoDbConnector;
+import wefit.entities.User;
 import wefit.manager.TrainerManager;
 import wefit.manager.UserManager;
 
@@ -19,7 +20,7 @@ import static org.neo4j.driver.Values.parameters;
 
 public class WeFit {
     static MongoDbConnector mongoDb;
-    static Document user;
+    static User user;
 
     public static void main(String[] args) {
         System.out.println("*******************************************\n" +
@@ -59,16 +60,16 @@ public class WeFit {
         email = sc.next();
         System.out.println("now insert your password...");
         password = sc.next();
-        user = mongoDb.signIn(email, password);
+        user = new User(mongoDb.signIn(email, password));
 
-        if (user != null && user.getString("trainer").equals("no")) {
+        if (user != null && user.getTrainer().equals("no")) {
             UserManager uM = new UserManager(user, mongoDb);
             try {
                 if(uM.session()==false) //if session return false the use want to exit
                     exit(1);
             } catch (IOException e) {e.printStackTrace();}
         }
-        else if(user != null && user.getString("trainer").equals("yes")) {
+        else if(user != null && user.getTrainer().equals("yes")) {
             TrainerManager tM = new TrainerManager(user, mongoDb);
             try {
                 if(tM.sessionTrainer()==false) //if session return false the use want to exit

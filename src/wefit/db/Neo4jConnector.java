@@ -11,6 +11,7 @@ import org.bson.types.ObjectId;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.InternalPath;
+import wefit.entities.User;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,13 +38,13 @@ public class Neo4jConnector {
     }
 
     //function for change profile's properties in the db
-    public void changeProfile(Document user){
+    public void changeProfile(User us){
         try ( Session session = graph_driver.session() ) {
             session.run("MATCH (a:User) WHERE a.user_id = $user "+
                     "SET a.name=$name, a.gender=$gender, a.birth=$birth, a.level=$level, a.trainer=$trainer",
-                    parameters("user", user.getString("user_id"), "name", user.getString("name"),
-                            "gender", user.getString("gender"), "birth", user.getString("birth"),
-                            "level", user.getString("level"), "trainer", user.getString("trainer")));
+                    parameters("user", us.getUser_id(), "name", us.getName(),
+                            "gender", us.getGender(), "birth", us.getYear_of_birth(),
+                            "level", us.getLevel(), "trainer", us.getTrainer()));
         };
     }
 
@@ -109,12 +110,12 @@ public class Neo4jConnector {
     }
 
     //function for add a new user (add a node in the db)
-    public void insertUser(Document user) {
+    public void insertUser(User user) {
         try ( Session session = graph_driver.session() )
         {
             session.run("CREATE (a:User {user_id:$user_id, name:$name, gender:$gender, birth:$birth, level:$level, trainer:$trainer})",
-                    parameters("user_id", user.getString("user_id"), "name", user.getString("name"), "gender", user.getString("gender"),
-                            "birth",user.getString("birth"),"level",user.getString("level"), "trainer", user.getString("trainer")));
+                    parameters("user_id", user.getUser_id(), "name", user.getName(), "gender", user.getGender(),
+                            "birth",user.getYear_of_birth(),"level",user.getLevel(), "trainer", user.getTrainer()));
         };
     }
 

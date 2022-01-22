@@ -25,7 +25,7 @@ public class User {
         fromDocument(doc);
     }
 
-    public User(String name, String gender, String year_of_birth, String height, String weight, String background,
+    public User(String name, String gender, String year_of_birth, String height, String weight, String train, String background,
                 String experience, String email, String password, String level, String trainer, String user_id){
         this.name = name;
         this.gender = gender;

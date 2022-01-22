@@ -26,6 +26,7 @@ import static com.mongodb.client.model.Accumulators.sum;
 
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import wefit.entities.User;
 
 import static com.mongodb.client.model.Projections.*;
 import java.io.*;
@@ -51,7 +52,8 @@ public class MongoDbConnector {
     }
 
     //function for change profile's properties in the db
-    public void changeProfile(Document user){
+    public void changeProfile(User us){
+        Document user = us.toDocument();
         try {
             DeleteResult result = users.deleteOne(eq("user_id", user.getString("user_id")));
         } catch (MongoException me) {
@@ -427,7 +429,8 @@ public class MongoDbConnector {
     }
 
     //function for signUp in the app (insert new user in the db)
-    public void signUp(Document user){
+    public void signUp(User us){
+        Document user = us.toDocument();
         try {
             InsertOneResult result = users.insertOne(user);
             System.out.println("Success! Inserted document id: " + result.getInsertedId());
