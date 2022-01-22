@@ -7,6 +7,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import wefit.db.MongoDbConnector;
 import wefit.db.Neo4jConnector;
+import wefit.entities.Comment;
 import wefit.entities.User;
 
 import javax.swing.text.html.HTMLDocument;
@@ -37,31 +38,25 @@ public class UserManager {
         this.neo4j = neo4j = new Neo4jConnector("bolt://localhost:7687", "neo4j", "wefit" );
     }
 
-    //show routines commented by the logged user
-    public void showRoutinesCommented(String userID) {
-        neo4j.searchRoutinesCommentedByUser(userID);
-    }
-
     //function for comment a routine
     public void addComment(String routine_id) throws IOException {
-        Document comment = new Document();
+        Comment c = new Comment(null, null);
         BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         String input = null;
         System.out.println("Insert the comment you want to add or press r to return...");
         input = bufferRead.readLine();
         if(input.equals("r"))
             return;
-        comment.append("Comment", input).append("Time", LocalDate.now().toString()).append("user", self.getUser_id());
-        mongoDb.insertComment(comment, routine_id);
+        c.setComment(input);
+        c.setUser(self.getUser_id());
+        mongoDb.insertComment(c, routine_id);
     }
 
     //function for vote a routine
     public void addVote(String routine_id){
         Scanner sc = new Scanner(System.in);
-        System.out.println("Please insert your vote or press r to return...");
-        String vote_string = sc.next();
-        if(vote_string.equals("r"))
-            return;
+        System.out.println("Please insert your vote (1-5) or press r to return...");
+        String vote_string = insertNumber();
         int vote = Integer.parseInt(vote_string);
         mongoDb.insertVote(routine_id, vote);
         neo4j.insertVote(self.getUser_id(), routine_id, vote);
@@ -86,79 +81,81 @@ public class UserManager {
         String input;
         while(true) {
             BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+            User new_user = new User(self.toDocument());
             input = sc.next();
             switch (input) {
                 case "1": {
                     System.out.println("Insert your full name...");
                     input = bufferRead.readLine();
-                    self.setName(input);
+                    new_user.setName(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "2": {
                     System.out.println("Insert your gender...");
                     input = sc.next();
-                    self.setGender(input);
+                    new_user.setGender(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "3": {
                     System.out.println("Insert your year of birth...");
-                    input = sc.next();
-                    self.setYear_of_birth(input);
+                    input = insertNumber();
+                    new_user.setYear_of_birth(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "4": {
                     System.out.println("Insert your height...");
-                    input = sc.next();
-                    self.setHeight(input);
+                    input = insertNumber();
+                    new_user.setHeight(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "5": {
                     System.out.println("Insert your weight...");
-                    input = sc.next();
-                    self.setWeight(input);
+                    input = insertNumber();
+                    new_user.setWeight(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "6": {
                     System.out.println("Insert your training...");
                     input = bufferRead.readLine();
-                    self.setTrain(input);
+                    new_user.setTrain(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "7": {
                     System.out.println("Insert your training background...");
                     input = bufferRead.readLine();
-                    self.setBackground(input);
+                    new_user.setBackground(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "8": {
                     System.out.println("Insert your experience...");
                     input = bufferRead.readLine();
-                    self.setExperience(input);
+                    new_user.setExperience(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "9": {
                     System.out.println("Insert your new email...");
                     input = sc.next();
-                    self.setEmail(input);
+                    new_user.setEmail(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "10": {
                     System.out.println("Insert your new password...");
                     input = sc.next();
-                    self.setPassword(input);
+                    new_user.setPassword(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
                 case "0":
+                    self = new_user;
                     mongoDb.changeProfile(self);
                     neo4j.changeProfile(self);
                     return;
@@ -166,6 +163,19 @@ public class UserManager {
                     return;
             }
         }
+    }
+
+    //function for insert a number (it ask until read is correct)
+    public String insertNumber(){
+        Scanner sc = new Scanner(System.in);
+        String input;
+        while(true) {
+            input = sc.next();
+            if (input.matches("[0-9.]+"))
+                break;
+            System.out.println("Please insert a correct number..");
+        }
+        return input;
     }
 
     //function for set filters for search routine(s)
@@ -231,9 +241,7 @@ public class UserManager {
                 }
                 case "4": {
                     System.out.println("Insert the \'vote\'");
-                    input = sc.next();
-                    if(!input.matches("[0-5.]"))
-                        System.out.println("Please insert a number between 1 and 5");
+                    input = insertNumber();
                     System.out.println("Press 0 to find lowest votes or 1 to find highest or equal votes");
                     String x = sc.next();
                     switch (x){
@@ -306,7 +314,7 @@ public class UserManager {
             switch (input) {
                 case "1": {
                     System.out.println("Insert the \'user_id\'");
-                    input = bufferRead.readLine();
+                    input = insertNumber();
                     filters.add(mongoDb.getFilter("user_id", input, "eq"));
 
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
@@ -339,14 +347,7 @@ public class UserManager {
                 }
                 case "4": {
                     System.out.println("Insert the \'Year of birth\' of the user");
-                    while(true){
-                        input = sc.next();
-                        if(!input.matches("[0-9]+")) {
-                            System.out.println("Please insert a correct year");
-                            continue;
-                        }
-                        break;
-                    }
+                    input = insertNumber();
                     System.out.println("Press 0 to find younger users or 1 to find oldest or peer users");
                     String x = sc.next();
                     switch (x){
@@ -380,14 +381,7 @@ public class UserManager {
                 }
                 case "6": {
                     System.out.println("Insert the \'height\' of the user");
-                    while (true) {
-                        input = sc.next();
-                        if (!input.matches("[0-9]+")) {
-                            System.out.println("Please insert a correct option");
-                            continue;
-                        }
-                        break;
-                    }
+                    input = insertNumber();
                     System.out.println("Press 0 to find shorter users or 1 to find higher or equal users");
                     String x = sc.next();
                     switch (x) {
@@ -405,14 +399,7 @@ public class UserManager {
                 }
                 case "7": {
                     System.out.println("Insert the \'weight\' of the user");
-                    while (true) {
-                        input = sc.next();
-                        if (!input.matches("[0-9]+")) {
-                            System.out.println("Please insert a correct option");
-                            continue;
-                        }
-                        break;
-                    }
+                    input = insertNumber();
                     System.out.println("Press 0 to find lighter1" +
                             " users or 1 to find heavier or equal users");
                     String x = sc.next();
@@ -543,7 +530,7 @@ public class UserManager {
                     showFollowers();
                     break;
                 case "5":
-                    showRoutinesCommented(self.getUser_id());
+                    showCommentedRoutines();
                     break;
                 case "6":
                     findRoutine();
@@ -591,17 +578,11 @@ public class UserManager {
             return true;
         gender = gender.replace(gender.substring(0,1), gender.substring(0,1).toUpperCase());
         System.out.println("Insert your year of birth...");
-        yob = sc.next();
-        if(yob.equals("r"))
-            return true;
+        yob = insertNumber();
         System.out.println("Insert your height...");
-        height = sc.next();
-        if(height.equals("r"))
-            return true;
+        height = insertNumber();
         System.out.println("Insert your weight...");
-        weight = sc.next();
-        if(weight.equals("r"))
-            return true;
+        weight = insertNumber();
         System.out.println("Insert your level (Beginner/Intermediate/Expert)...");
         level = sc.next();
         if(level.equals("r"))
@@ -639,6 +620,13 @@ public class UserManager {
         if (session()==false)
             return false; //exit the application
         return true;
+    }
+
+    //show routines commented by the logged user
+    public void showCommentedRoutines() {
+        String id = neo4j.showCommentedRoutines(self.getUser_id());
+        if(id!=null)
+            mongoDb.showRoutineDetails(id);
     }
 
     public void showCurrentRoutine() throws IOException {

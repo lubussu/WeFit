@@ -12,6 +12,7 @@ import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.InternalPath;
 import wefit.entities.User;
+import wefit.entities.Workout;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -60,42 +61,43 @@ public class Neo4jConnector {
     }
 
     //show all the routines commented by a given user
-    public void searchRoutinesCommentedByUser(String user) {
-        ArrayList<Record> followed = new ArrayList<>();
+    public String showCommentedRoutines(String user) {
+        ArrayList<Record> routines = new ArrayList<>();
         try ( Session session = graph_driver.session() ) {
-            followed = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
-                List<Record> routines;
+            routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
+                List<Record> records;
 
 
-                routines = tx.run("MATCH (:User {user_id: $user}) -[r:COMMENT]->(b:Routine) RETURN b AS routine",
+                records = tx.run("MATCH (:User {user_id: $user}) -[r:COMMENT]->(b:Routine) RETURN b AS routine",
                         parameters("user",user)).list();
 
-                if(routines == null) {
+                if(records == null) {
                     System.out.println("You have not commented any routine yet...\n");}
-                return routines;
+                return records;
             });
         };
-        printRoutines(followed, 10);
+        printRoutines(routines, 10);
+        return selectRoutine(routines);
     }
 
-
     //show all the routines of a given trainer
-    public void searchRoutinesByTrainer(String trainer) {
-        ArrayList<Record> followed = new ArrayList<>();
+    public String showCreatedRoutines(String trainer) {
+        ArrayList<Record> routines;
         try ( Session session = graph_driver.session() ) {
-            followed = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
-                List<Record> routines;
+            routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
+                List<Record> records;
 
 
-                routines = tx.run("MATCH (a:User {user_id: $trainer}) -[:CREATE_ROUTINE]->(b:Routine) return b AS routine",
+                records = tx.run("MATCH (a:User {user_id: $trainer}) -[:CREATE_ROUTINE]->(b:Routine) return b AS routine",
                         parameters("trainer",trainer)).list();
 
-                if(routines == null) {
+                if(records == null) {
                     System.out.println("You have not created any routine yet...\n");}
-                return routines;
+                return (ArrayList<Record>) records;
             });
         };
-        printRoutines(followed, 10);
+        printRoutines(routines, 10);
+        return selectRoutine(routines);
     }
 
     //function for vote a routine (add relation in the db)
@@ -120,14 +122,14 @@ public class Neo4jConnector {
     }
 
     //function for add a new routine (add a node in the db)
-    public void insertRoutine(Document routine) {
+    public void insertRoutine(Workout routine, String id) {
         try ( Session session = graph_driver.session() )
         {
             session.run("MATCH (a:User {user_id:$user}) MATCH (b:User {user_id:$trainer})" +
                     "CREATE (r:Routine {_id: $id, user:$user, trainer:$trainer, level:$level, starting_day:$s_day, end_day:$e_day}) "+
                     "CREATE (a)-[:HAS_ROUTINE]->(r) CREATE (b)-[:CREATE_ROUTINE]->(r)",
-                    parameters("id", routine.getObjectId("_id").toString(),"user", routine.getString("user"), "trainer", routine.getString("trainer"), "level", routine.getString("level"),
-                            "s_day",routine.getString("starting_day"),"e_day",routine.getString("end_day")));
+                    parameters("id", id,"user", routine.getUser(), "trainer", routine.getTrainer(), "level", routine.getLevel(),
+                            "s_day",routine.getStarting_day(),"e_day",routine.getEnd_day()));
         };
     }
 
@@ -192,12 +194,16 @@ public class Neo4jConnector {
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
-            System.out.printf("%5s %10s %15s %15s %15s", (i+1)+") ", r.get("routine").get("trainer").toString().replace("\"",""),r.get("routine").get("level").toString().replace("\"",""),
-                    r.get("routine").get("starting_day").toString().replace("\"",""),r.get("routine").get("end_day").toString().replace("\"",""));
-            System.out.println("\n");
+            System.out.printf("%5s", (i+1)+") ");
+            Workout w = new Workout(null, r.get("routine").get("trainer").toString().replace("\"",""),
+                    r.get("routine").get("level").toString().replace("\"",""),
+                    -1, -1, -1, null, null, null,
+                    r.get("routine").get("starting_day").toString().replace("\"",""),
+                    r.get("routine").get("end_day").toString().replace("\"",""), null, -1, -1);
+            w.print();
             cycle++;
             if(cycle == num){
-                System.out.println("Insert m to see more or another key to return...");
+                System.out.println("Insert m to see more or another key to continue...");
                 Scanner sc = new Scanner(System.in);
                 if(sc.next().equals("m")) cycle = 0;
                 else return;
@@ -212,13 +218,15 @@ public class Neo4jConnector {
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
-            System.out.printf("%5s %10s %20s %10s %15s %15s %10s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
-                    r.get("user").get("gender").toString().replace("\"",""), r.get("user").get("birth").toString().replace("\"",""),
-                    r.get("user").get("level").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""));
-            System.out.println("\n");
+            System.out.printf("%5s", (i+1)+") ");
+            User u = new User(r.get("user").get("name").toString().replace("\"",""), r.get("user").get("gender").toString().replace("\"",""),
+                    r.get("user").get("birth").toString().replace("\"",""), null, null, null, null, null, null, null,
+                    r.get("user").get("level").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""),
+                    r.get("user").get("user_id").toString().replace("\"",""));
+            u.print();
             cycle++;
             if(cycle == num){
-                System.out.println("Insert m to see more or another key to return...");
+                System.out.println("Insert m to see more or another key to continue...");
                 Scanner sc = new Scanner(System.in);
                 if(sc.next().equals("m")) cycle = 0;
                 else return;
@@ -285,6 +293,27 @@ public class Neo4jConnector {
             }
         }
         return null;
+    }
+
+    //function to select a routine from given routines
+    public String selectRoutine(ArrayList<Record> routines){
+        String input;
+        while (true) {
+            System.out.println("Press the number of the routine you want to select\n" +
+                    "or press r to return to the main menu");
+
+            Scanner sc = new Scanner(System.in);
+            input = sc.next();
+            if(input.equals("r"))
+                return null;
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > routines.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        return routines.get(Integer.parseInt(input)-1).get("routine").get("_id").toString().replace("\"","");
     }
 
     //function for retry the list of followers/followed users (and select one of them)
@@ -394,42 +423,25 @@ public class Neo4jConnector {
 
     //function to show all the routines (past or current) of the given user
     public String showRoutines(String user, String period){
-        ArrayList<Record> followed = new ArrayList<>();
+        ArrayList<Record> routines = new ArrayList<>();
         try ( Session session = graph_driver.session() ) {
-            followed = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
-                List<Record> routines;
+            routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
+                List<Record> records;
                 String c_day = LocalDate.now().toString();
                 if(period.equals("all"))
-                    routines = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user RETURN b AS routine",parameters("user",user)).list();
+                    records = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user RETURN b AS routine",parameters("user",user)).list();
                 else if(period.equals("past"))
-                    routines = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user AND b.end_day < $date RETURN b AS routine",
+                    records = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user AND b.end_day < $date RETURN b AS routine",
                             parameters("user",user, "date", c_day)).list();
                 else
-                    routines = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user AND b.end_day >= $date RETURN b AS routine",
+                    records = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user AND b.end_day >= $date RETURN b AS routine",
                             parameters("user",user, "date", c_day)).list();
                 ArrayList<Record> results = new ArrayList<>();
-                return routines;
+                return records;
             });
         };
-        printRoutines(followed, 10);
-
-        String input;
-        while (true) {
-            System.out.println("Press the number of the routine you want to select\n" +
-                    "or press r to return to the main menu");
-
-            Scanner sc = new Scanner(System.in);
-            input = sc.next();
-            if(input.equals("r"))
-                return null;
-            if (!input.matches("[0-9.]+"))
-                System.out.println("Please select an existing option!");
-            else if ((Integer.parseInt(input)) > followed.size())
-                System.out.println("Please select an existing option!\n");
-            else
-                break;
-        }
-        return followed.get(Integer.parseInt(input)-1).get("routine").get("_id").toString().replace("\"","");
+        printRoutines(routines, 10);
+        return selectRoutine(routines);
     }
 
     //function for unfollow a user (add relation in the db)

@@ -3,6 +3,7 @@ package wefit.entities;
 import com.sun.source.tree.BinaryTree;
 import lombok.*;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.neo4j.driver.internal.shaded.io.netty.util.internal.StringUtil;
 
 import javax.print.Doc;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 @Setter
 public class Workout {
 
+    private String id;
     private String user;
     private String trainer;
     private String level;
@@ -25,7 +27,7 @@ public class Workout {
     private String end_day;
     private ArrayList<Comment> comments;
     private int num_votes;
-    private int vote;
+    private double vote;
 
     public Workout(Document doc){
         fromDocument(doc);
@@ -33,7 +35,7 @@ public class Workout {
 
     public Workout(String user, String trainer, String level, int work_time, int rest_time, int repeat, ArrayList<Exercise> warm_up,
                    ArrayList<Exercise> exercises, ArrayList<Exercise> stretching, String starting_day, String end_day,
-                   ArrayList<Comment> comments, int num_votes, int vote){
+                   ArrayList<Comment> comments, int num_votes, double vote){
         this.user = user;
         this.trainer = trainer;
         this.level = level;
@@ -52,6 +54,8 @@ public class Workout {
 
     public Document toDocument(){
         Document doc = new Document();
+        if(id != null)
+            doc.append("_id", new ObjectId(id));
         doc.append("user", user);
         doc.append("trainer", trainer);
         doc.append("level", level);
@@ -111,6 +115,11 @@ public class Workout {
         user = doc.getString("user");
         trainer = doc.getString("trainer");
         level = doc.getString("level");
+        warm_up = new ArrayList<>();
+        stretching= new ArrayList<>();
+        exercises = new ArrayList<>();
+        comments = new ArrayList<>();
+
         ArrayList<Document> routine;
         //for warmup
         routine = (ArrayList<Document>) doc.get("warm_up");
@@ -134,12 +143,54 @@ public class Workout {
         end_day = doc.getString("end_day");
         //for comments
         routine = (ArrayList<Document>) doc.get("comments");
-        for(Document c : routine){
-            Comment fetch = new Comment(c);
-            comments.add(fetch);
+        if(routine != null) {
+            for (Document c : routine) {
+                Comment fetch = new Comment(c);
+                comments.add(fetch);
+            }
         }
         num_votes = doc.getInteger("num_votes");
-        vote = doc.getInteger("vote");
+        vote = doc.getDouble("vote");
+    }
+
+    public void printDetails(){
+        System.out.println("------------------------------------------------------------------------------------------------------------");
+        System.out.println("ROUTINE DETAILS");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
+
+        System.out.print("trainer: " + trainer+"\t");
+        System.out.print("level: " + level+"\n");
+        System.out.print("starting_day: " + starting_day+"\t");
+        System.out.print("end_day: " + end_day+"\n");
+        System.out.print("work_time(sec): " + work_time+"\t");
+        System.out.print("rest_time(sec): " + rest_time+"\n\n");
+
+        System.out.print("WARM UP:\n");
+        System.out.printf("%50s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
+        for(Exercise ex : warm_up)
+            ex.print();
+        System.out.println();
+
+        System.out.print("EXERCISES:\tRepeat the sequence "+repeat+" times\n");
+        System.out.printf("%50s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
+        for(Exercise ex : exercises)
+            ex.print();
+        System.out.println();
+
+        System.out.print("STRETCHING:\n");
+        System.out.printf("%50s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
+        System.out.println("------------------------------------------------------------------------------------------------------------");
+        for(Exercise ex : exercises)
+            ex.print();
+        System.out.println();
+    }
+
+    public void print(){
+        System.out.printf("%10s %15s %15s %15s", trainer,level,
+                starting_day,end_day);
+        System.out.println("\n");
     }
 
 }

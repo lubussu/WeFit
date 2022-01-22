@@ -75,4 +75,25 @@ public class User {
         trainer = doc.getString("trainer");
         user_id = doc.getString("user_id");
     }
+
+    public void printDetails(){
+        System.out.println("USER DETAILS:\n");
+
+        System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer", "Height", "Weight\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+
+        System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", user_id,name,gender,
+                year_of_birth, level, trainer, height,weight);
+        System.out.println("\n");
+
+        if(train != null)      System.out.println("Train:\n" + train+"\n");
+        if(background!= null)  System.out.println("Background:\n" + background+"\n");
+        if(experience!= null)  System.out.println("Experience:\n" + background+"\n");
+    }
+
+    public void print(){
+        System.out.printf("%10s %20s %10s %15s %15s %10s", user_id,name,gender,
+                year_of_birth,level,trainer);
+        System.out.println("\n");
+    }
 }
