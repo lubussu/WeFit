@@ -388,7 +388,7 @@ public class TrainerManager extends UserManager{
         String threshold;
 
         Scanner sc = new Scanner(System.in);
-        System.out.println("Insert threshold year for the age or press r to return...");
+        System.out.println("Insert the age you want to consider or press r to return...");
         while(true) {
             threshold = sc.next();
             if (threshold.equals("r"))
@@ -399,7 +399,7 @@ public class TrainerManager extends UserManager{
                 break;
         }
 
-        mongoDb.showAvgAgeLvl(threshold);
+        mongoDb.showAvgAgeLvl(Integer.toString(LocalDate.now().getYear()-Integer.parseInt(threshold)));
     }
 
     public void showCreatedRoutines() {
