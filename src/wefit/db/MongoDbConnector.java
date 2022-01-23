@@ -26,6 +26,7 @@ import static com.mongodb.client.model.Accumulators.sum;
 
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.w3c.dom.css.DocumentCSS;
 import wefit.entities.Comment;
 import wefit.entities.Exercise;
 import wefit.entities.User;
@@ -204,13 +205,14 @@ public class MongoDbConnector {
         }
         else
             muscle = "ALL";
+
         Bson group = group("$exercises.equipment", sum("count", 1));
-        Bson sort = sort(descending("count"));
         Bson match = match(ne("_id","Body Only"));
+        Bson sort = sort(descending("count"));
         Bson limit = limit(1);
         filters.add(group);
-        filters.add(sort);
         filters.add(match);
+        filters.add(sort);
         filters.add(limit);
 
         Document aggregation = workout.aggregate(filters).first();
@@ -445,18 +447,33 @@ public class MongoDbConnector {
     }
 
     public void showAvgAgeLvl(String threshold){
-        List<Bson> avg_pipeline = Arrays.asList(group("$level", Accumulators.avg("Avg", eq("$toInt", "$year_of_birth"))));
-        AggregateIterable<Document> avg_result = users.aggregate(avg_pipeline);
-        System.out.println("These are the average ages per level of the users:");
-        avg_result.forEach(document -> System.out.println("Level: " + document.getString("_id") + " Average Age: " + String.valueOf(LocalDate.now().getYear() - Math.round(document.getDouble("Avg")))));
+        Bson match = match(and(eq("trainer", "no"),ne("year_of_birth", null)));
+        Bson group = group("$level", Accumulators.avg("Avg", eq("$toInt", "$year_of_birth")));
+        System.out.format("%20s %20s", "LEVEL", "AVERAGE AGE");
+        System.out.println("\n---------------------------------------------------------------------");
+        users.aggregate(Arrays.asList(match, group)).forEach(document -> {
+            System.out.format("%20s %20d", document.getString("_id"),
+                    (LocalDate.now().getYear() - Math.round(document.getDouble("Avg"))));
+            System.out.println();
+        });
 
-        Bson match = match(gte("year_of_birth", threshold));
-        Bson group = group("$level", sum("count", 1));
+
+        match = match(and(eq("trainer","no"),gte("year_of_birth", threshold)));
+        group = group("$level", sum("count", 1));
         Bson sort = sort(descending("count"));
-        List<Bson> count_pipeline = Arrays.asList(match, group, sort);
-        AggregateIterable<Document> count_result = users.aggregate(count_pipeline);
-        System.out.println("\nThis is the level with most users with age in the specified range:");
-        System.out.println("Level: " + count_result.first().getString("_id") + " count: " + String.valueOf(count_result.first().getInteger("count")) + "\n");
+
+        Document youngers = users.aggregate(Arrays.asList(match, group, sort)).first();
+        match = match(and(eq("trainer","no"),lt("year_of_birth", threshold)));
+        Document olders = users.aggregate(Arrays.asList(match, group, sort)).first();
+
+        System.out.println("\nThese are the level with most users older/younger than the given age:\n");
+        System.out.format("%30s %30s", "YOUNGERS", "OLDERS");
+        System.out.println("\n---------------------------------------------------------------------");
+        System.out.format("%20s %10s %20s %10s", "LEVEL", "COUNT", "LEVEL", "COUNT");
+        System.out.println();
+        System.out.format("%20s %10d ",youngers.getString("_id"), youngers.getInteger("count"));
+        System.out.format("%20s %10d",olders.getString("_id"), olders.getInteger("count"));
+        System.out.println();
     }
 
     public void showComments(String routine){

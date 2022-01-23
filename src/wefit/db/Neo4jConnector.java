@@ -357,7 +357,9 @@ public class Neo4jConnector {
             ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
                 persons = tx.run("MATCH (s:Routine)<-[:HAS_ROUTINE]-(a:User)-[:HAS_ROUTINE]->(r:Routine) " +
-                                "WHERE r.starting_day >= $start AND s.end_day <= $end AND r.level = \"Beginner\" AND s.level = \"Intermediate\" AND s.starting_day > r.starting_day " +
+                                "WHERE r.starting_day >= $start AND s.end_day <= $end AND " +
+                                "r.level = \"Beginner\" AND s.level = \"Intermediate\" AND " +
+                                "s.starting_day > r.starting_day " +
                                 "RETURN count(DISTINCT a) AS user",
                         parameters("start", start, "end", end)).list();
                 return persons;
@@ -398,13 +400,15 @@ public class Neo4jConnector {
     }
 
     public String showMostFidelityUsers(int num){
+
         String date = LocalDate.now().toString();
         try (Session session = graph_driver.session()) {
             ArrayList<Record> users = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
                 persons = tx.run("MATCH (a:User)-[:HAS_ROUTINE]->(r:Routine) " +
                                 "WHERE r.end_day < $date " +
-                                "RETURN a AS user, COUNT(r) AS past_routines, min(r.starting_day) AS first_routine ORDER BY past_routines DESC, first_routine LIMIT $num",
+                                "RETURN a AS user, COUNT(r) AS past_routines, min(r.starting_day) AS first_routine " +
+                                "ORDER BY past_routines DESC, first_routine LIMIT $num",
                         parameters("date", date, "num", num)).list();
                 return persons;
             });
