@@ -471,8 +471,12 @@ public class MongoDbConnector {
         System.out.println("\n---------------------------------------------------------------------");
         System.out.format("%20s %10s %20s %10s", "LEVEL", "COUNT", "LEVEL", "COUNT");
         System.out.println();
-        System.out.format("%20s %10d ",youngers.getString("_id"), youngers.getInteger("count"));
-        System.out.format("%20s %10d",olders.getString("_id"), olders.getInteger("count"));
+        if(youngers != null) {
+            System.out.format("%20s %10d ", youngers.getString("_id"), youngers.getInteger("count"));
+        }
+        if(olders != null) {
+            System.out.format("%20s %10d", olders.getString("_id"), olders.getInteger("count"));
+        }
         System.out.println();
     }
 
