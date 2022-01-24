@@ -1,4 +1,4 @@
-package wefit.entities;
+package it.unipi.wefit.entities;
 
 import com.sun.source.tree.BinaryTree;
 import lombok.*;
@@ -158,12 +158,13 @@ public class Workout {
         System.out.println("ROUTINE DETAILS");
         System.out.println("------------------------------------------------------------------------------------------------------------");
 
-        System.out.print("trainer: " + trainer+"\t");
-        System.out.print("level: " + level+"\n");
-        System.out.print("starting_day: " + starting_day+"\t");
-        System.out.print("end_day: " + end_day+"\n");
-        System.out.print("work_time(sec): " + work_time+"\t");
-        System.out.print("rest_time(sec): " + rest_time+"\n\n");
+        System.out.print("Trainer: " + trainer+"\t");
+        System.out.print("Level: " + level+"\n");
+        System.out.print("Starting_day: " + starting_day+"\t");
+        System.out.print("End_day: " + end_day+"\n");
+        System.out.print("Work_time(sec): " + work_time+"\t");
+        System.out.print("Rest_time(sec): " + rest_time+"\n");
+        System.out.println("Average vote: " + vote+"\n\n");
 
         System.out.print("WARM UP:\n");
         System.out.printf("%50s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
@@ -188,8 +189,8 @@ public class Workout {
     }
 
     public void print(){
-        System.out.printf("%10s %15s %15s %15s", trainer,level,
-                starting_day,end_day);
+        System.out.printf("%10s %15s %15s %15s %15s", trainer,level,
+                starting_day,end_day, vote);
         System.out.println("\n");
     }
 

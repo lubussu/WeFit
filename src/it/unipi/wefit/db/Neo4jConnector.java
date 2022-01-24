@@ -1,4 +1,4 @@
-package wefit.db;
+package it.unipi.wefit.db;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoException;
@@ -11,9 +11,7 @@ import org.bson.types.ObjectId;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.InternalPath;
-import wefit.entities.Comment;
-import wefit.entities.User;
-import wefit.entities.Workout;
+import it.unipi.wefit.entities.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -215,7 +213,7 @@ public class Neo4jConnector {
     //function for print summary information of the given routines
     public void printRoutines(ArrayList<Record> rec, int num){
         int cycle = 0;
-        System.out.printf("%5s %10s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day\n");
+        System.out.printf("%5s %10s %15s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day","Vote\n");
         System.out.println("--------------------------------------------------------------------------------------------------------");
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
@@ -224,7 +222,8 @@ public class Neo4jConnector {
                     r.get("routine").get("level").toString().replace("\"",""),
                     -1, -1, -1, null, null, null,
                     r.get("routine").get("starting_day").toString().replace("\"",""),
-                    r.get("routine").get("end_day").toString().replace("\"",""), null, -1, -1);
+                    r.get("routine").get("end_day").toString().replace("\"",""), null, -1,
+                    Double.parseDouble(r.get("routine").get("vote").toString().replace("\"","")));
             w.print();
             cycle++;
             if(cycle == num){

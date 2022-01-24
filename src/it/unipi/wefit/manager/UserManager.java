@@ -1,14 +1,14 @@
-package wefit.manager;
+package it.unipi.wefit.manager;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import wefit.db.MongoDbConnector;
-import wefit.db.Neo4jConnector;
-import wefit.entities.Comment;
-import wefit.entities.User;
+import it.unipi.wefit.db.MongoDbConnector;
+import it.unipi.wefit.db.Neo4jConnector;
+import it.unipi.wefit.entities.Comment;
+import it.unipi.wefit.entities.User;
 
 import javax.swing.text.html.HTMLDocument;
 import java.io.BufferedReader;
@@ -80,9 +80,9 @@ public class UserManager {
         System.out.println("Select an option or press \'r\' to return...");
         Scanner sc = new Scanner(System.in);
         String input;
+        User new_user = new User(self.toDocument());
         while(true) {
             BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-            User new_user = new User(self.toDocument());
             input = sc.next();
             switch (input) {
                 case "1": {
@@ -635,7 +635,7 @@ public class UserManager {
 
         mongoDb.signUp(self);
         neo4j.insertUser(self);
-        System.out.println("\nNice, from now on your are a member of the WeFit community,\n" +
+        System.out.println("\nNice, from now on your are a member of the it.unipi.wefit.community,\n" +
                 "soon one of our trainer will contact you to assign a training level\n" +
                 "and build a personal routine with you!\n" +
                 "We hope your stay here will be a pleasurable one!\n");

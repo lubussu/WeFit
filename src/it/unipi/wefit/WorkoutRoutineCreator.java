@@ -1,4 +1,4 @@
-package wefit;
+package it.unipi.wefit;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.*;
 import org.bson.Document;

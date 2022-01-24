@@ -1,4 +1,4 @@
-package wefit.entities;
+package it.unipi.wefit.entities;
 
 import lombok.*;
 import org.bson.Document;
@@ -80,7 +80,7 @@ public class User {
         System.out.println("USER DETAILS:\n");
 
         System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer", "Height", "Weight\n");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
+        System.out.println("-------------------------------------------------------------------------------------------------------------");
 
         System.out.printf("%10s %20s %10s %15s %15s %10s %10s %10s", user_id,name,gender,
                 year_of_birth, level, trainer, height,weight);

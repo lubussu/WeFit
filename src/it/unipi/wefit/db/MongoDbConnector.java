@@ -1,4 +1,4 @@
-package wefit.db;
+package it.unipi.wefit.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.ConnectionString;
 import com.mongodb.DBObject;
@@ -7,6 +7,7 @@ import com.mongodb.client.*;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
+import it.unipi.wefit.entities.User;
 import org.bson.Document;
 
 import java.awt.image.AreaAveragingScaleFilter;
@@ -26,11 +27,7 @@ import static com.mongodb.client.model.Accumulators.sum;
 
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.w3c.dom.css.DocumentCSS;
-import wefit.entities.Comment;
-import wefit.entities.Exercise;
-import wefit.entities.User;
-import wefit.entities.Workout;
+import it.unipi.wefit.entities.*;
 
 import static com.mongodb.client.model.Projections.*;
 import java.io.*;
@@ -66,7 +63,7 @@ public class MongoDbConnector {
         }
         try {
             InsertOneResult result = users.insertOne(user.toDocument());
-            System.out.println("Success! Your profile has been updated.");
+            System.out.println("Success! The profile has been updated.");
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
         }
@@ -182,8 +179,6 @@ public class MongoDbConnector {
         score = routine.getDouble("vote");
         nVotes = routine.getInteger("num_votes");
 
-        System.out.println(nVotes + " " + score);
-
         BigDecimal bd = new BigDecimal(((score*nVotes)+vote)/(nVotes+1)).setScale(2, RoundingMode.HALF_UP);
         nVotes = nVotes+1;
         score = bd.doubleValue();
@@ -275,7 +270,7 @@ public class MongoDbConnector {
     //function for print summary information of the given routines
     private void printRoutines(ArrayList<Document> docs, int num) {
         int cycle = 0;
-        System.out.printf("%5s %10s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day\n");
+        System.out.printf("%5s %10s %15s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day","Vote\n");
         System.out.println("------------------------------------------------------------------------------------------------------------");
         for(int i=0; i<docs.size(); i++) {
             System.out.printf("%5s", (i+1)+") ");

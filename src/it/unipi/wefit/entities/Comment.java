@@ -1,4 +1,4 @@
-package wefit.entities;
+package it.unipi.wefit.entities;
 
 
 import org.bson.Document;

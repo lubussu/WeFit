@@ -1,15 +1,14 @@
 
-package wefit;
+package it.unipi.wefit;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.*;
 import org.bson.Document;
 import org.neo4j.driver.*;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
-import wefit.db.MongoDbConnector;
-import wefit.entities.User;
-import wefit.manager.TrainerManager;
-import wefit.manager.UserManager;
+import it.unipi.wefit.db.*;
+import it.unipi.wefit.entities.*;
+import it.unipi.wefit.manager.*;
 
 import java.io.IOException;
 import java.time.LocalDate;

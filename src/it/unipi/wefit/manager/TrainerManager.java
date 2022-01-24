@@ -1,11 +1,9 @@
-package wefit.manager;
+package it.unipi.wefit.manager;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import wefit.db.MongoDbConnector;
-import wefit.entities.Exercise;
-import wefit.entities.User;
-import wefit.entities.Workout;
+import it.unipi.wefit.db.*;
+import it.unipi.wefit.entities.*;
 
 import javax.print.Doc;
 import java.io.BufferedReader;
@@ -331,7 +329,7 @@ public class TrainerManager extends UserManager{
                     "----------ANALYTICS----------\n" +
                     "6)  See average age per level\n" +
                     "7)  Find most fidelity users\n" +
-                    "8)  Find most used equipments\n" +
+                    "8)  Find most used equipments per muscle\n" +
                     "9)  Find most common exercises in most rated routines\n" +
                     "10) Show level up\n" +
                     "-----------------------------\n" +
