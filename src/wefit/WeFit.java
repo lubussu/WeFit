@@ -60,6 +60,11 @@ public class WeFit {
         email = sc.next();
         System.out.println("now insert your password...");
         password = sc.next();
+        Document d = mongoDb.signIn(email, password);
+        if(d==null) {
+            System.out.println("Incorrect email or password, please retry!");
+            return;
+        }
         user = new User(mongoDb.signIn(email, password));
 
         if (user != null && user.getTrainer().equals("no")) {
@@ -75,9 +80,6 @@ public class WeFit {
                 if(tM.sessionTrainer()==false) //if session return false the use want to exit
                     exit(1);
             } catch (IOException e) {e.printStackTrace();}
-        }
-        else{
-            System.out.println("Incorrect email or password, please retry!");
         }
     }
 }

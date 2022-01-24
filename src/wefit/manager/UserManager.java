@@ -50,6 +50,7 @@ public class UserManager {
         c.setComment(input);
         c.setUser(self.getUser_id());
         mongoDb.insertComment(c, routine_id);
+        neo4j.insertComment(c.getUser(), routine_id);
     }
 
     //function for vote a routine
@@ -163,6 +164,11 @@ public class UserManager {
                     return;
             }
         }
+    }
+
+    public void deleteComment(String comment, String routine){
+        mongoDb.deleteComment(comment, routine);
+        neo4j.deleteComment(self.getUser_id(), routine);
     }
 
     //function for insert a number (it ask until read is correct)
@@ -484,7 +490,7 @@ public class UserManager {
                 addVote(option.substring(2));
         }
 
-        else if(option.startsWith("u:")){ // the user want to see details of one user
+        else if(option.startsWith("d:")){ // the user want to see details of one user
             String ret = mongoDb.showUserDetails(option.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
             if(ret==null)
                 return;
@@ -495,9 +501,25 @@ public class UserManager {
                 neo4j.followUser(self.getUser_id(), option.substring(2));
             }
         }
+        else if(option.startsWith("f:")) //follow user without see details
+            neo4j.followUser(self.getUser_id(), option.substring(2));
+        else if(option.startsWith("u:")) //unfollow user without see details
+            neo4j.unfollowUser(self.getUser_id(), option.substring(2));
+    }
+
+    public void optionsRoutine(String option, String routine) throws IOException {
+        if(option==null)
+            return;
+        else if(option.startsWith("c:"))
+            addComment(routine);
+        else if(option.startsWith("v:"))
+            addVote(routine);
+        else if(option.startsWith("d:"))
+            deleteComment(option.substring(2), routine);
     }
 
     public boolean session() throws IOException {
+        mongoDb.setUser(self);
         System.out.println("WELCOME " + self.getName());
         boolean running = true;
         while(running) {
@@ -623,22 +645,19 @@ public class UserManager {
     }
 
     //show routines commented by the logged user
-    public void showCommentedRoutines() {
-        String id = neo4j.showCommentedRoutines(self.getUser_id());
-        if(id!=null)
-            mongoDb.showRoutineDetails(id);
+    public void showCommentedRoutines() throws IOException {
+        String routine = neo4j.showCommentedRoutines(self.getUser_id());
+        if(routine!=null) {
+            String option = mongoDb.showRoutineDetails(routine);
+            optionsRoutine(option, routine);
+        }
     }
 
     public void showCurrentRoutine() throws IOException {
         String routine = neo4j.showRoutines(self.getUser_id(), "current");
         if(routine!=null) {
             String option = mongoDb.showRoutineDetails(routine);
-            if(option==null)
-                return;
-            else if(option.startsWith("c:"))
-                addComment(routine);
-            else if(option.startsWith("v:"))
-                addVote(routine);
+            optionsRoutine(option, routine);
         }
     }
 
@@ -657,12 +676,7 @@ public class UserManager {
         String routine = neo4j.showRoutines(self.getUser_id(), "past");
         if(routine!=null) {
             String option = mongoDb.showRoutineDetails(routine);
-            if(option==null)
-                return;
-            else if(option.startsWith("c:"))
-                addComment(routine);
-            else if(option.startsWith("v:"))
-                addVote(routine);
+            optionsRoutine(option, routine);
         }
     }
 

@@ -46,6 +46,8 @@ public class MongoDbConnector {
     private MongoCollection<Document> workout;
     private MongoCollection<Document> users;
 
+    private User user;
+
     public MongoDbConnector(String conn, String db_name){
         uri = new ConnectionString(conn);
         myClient = MongoClients.create(uri);
@@ -68,6 +70,13 @@ public class MongoDbConnector {
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
         }
+    }
+
+    public void deleteComment(String comment, String routine){
+        Bson filter = eq("_id", new ObjectId(routine));
+        Bson change = pull("comments_id", comment);
+        workout.updateOne(filter, change);
+        System.out.println("Success! Your comment has been deleted.");
     }
 
     public Bson getFilter(String field, String value, String option){
@@ -136,7 +145,8 @@ public class MongoDbConnector {
     //function to insert a comment in the db
     public void insertComment(Comment comment, String id){
         Bson filter = eq("_id", new ObjectId(id));
-        Bson change = push("comments", comment.toDocument());
+        Document com = comment.toDocument().append("_id", new ObjectId());
+        Bson change = push("comments", com);
         workout.updateOne(filter, change);
         System.out.println("Success! Your comment has been inserted.");
     }
@@ -405,7 +415,7 @@ public class MongoDbConnector {
     }
 
     //function to select a user from given users
-    public String selectUser(ArrayList<Document> docs){
+    public String selectUser(ArrayList<Document> docs) {
         String input;
         while (true) {
             System.out.println("Press the number of the user you want to select\n" +
@@ -420,13 +430,27 @@ public class MongoDbConnector {
             else
                 break;
         }
+
+        System.out.println("Press 1 to see user's details\n" +
+                "press 2 to follow the user\n" +
+                "press 3 to unfollow the user");
+
+        String id = docs.get(Integer.parseInt(input)-1).getString("user_id");
+        Scanner sc = new Scanner(System.in);
+        input = sc.next();
         switch (input) {
-            case "0":
-                return null;
-            default:
-                String id = docs.get(Integer.parseInt(input)-1).getString("user_id");
-                return showUserDetails(id);
+            case "1":
+                return "d:" + id.replace("\"", "");
+            case "2":
+                return "f:" + id.replace("\"", ""); //follow user
+            case "3":
+                return "u:" + id.replace("\"", ""); //unfollow user
         }
+        return null;
+    }
+
+    public void setUser(User u){
+        user = u;
     }
 
     //function for signIn in the app (search credentials in the db)
@@ -447,7 +471,7 @@ public class MongoDbConnector {
     }
 
     public void showAvgAgeLvl(String threshold){
-        Bson match = match(and(eq("trainer", "no"),ne("year_of_birth", null)));
+        Bson match = match(eq("trainer", "no"));
         Bson group = group("$level", Accumulators.avg("Avg", eq("$toInt", "$year_of_birth")));
         System.out.format("%20s %20s", "LEVEL", "AVERAGE AGE");
         System.out.println("\n---------------------------------------------------------------------");
@@ -461,10 +485,13 @@ public class MongoDbConnector {
         match = match(and(eq("trainer","no"),gte("year_of_birth", threshold)));
         group = group("$level", sum("count", 1));
         Bson sort = sort(descending("count"));
+        Bson limit = limit(1);
 
-        Document youngers = users.aggregate(Arrays.asList(match, group, sort)).first();
+        Document youngers = users.aggregate(Arrays.asList(match, group, sort,limit)).first();
+
+
         match = match(and(eq("trainer","no"),lt("year_of_birth", threshold)));
-        Document olders = users.aggregate(Arrays.asList(match, group, sort)).first();
+        Document olders = users.aggregate(Arrays.asList(match, group, sort,limit)).first();
 
         System.out.println("\nThese are the level with most users older/younger than the given age:\n");
         System.out.format("%30s %30s", "YOUNGERS", "OLDERS");
@@ -476,14 +503,43 @@ public class MongoDbConnector {
         System.out.println();
     }
 
-    public void showComments(String routine){
+    public String showComments(String routine){
         ArrayList<Document> comments = (ArrayList<Document>) workout.find(eq("_id", new ObjectId(routine))).first().get("comments");
         System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
-        for(Document c: comments){
+        if(comments.size()==0){
+            System.out.println("The routine has not any comment yet\nPress any key to continue..");
+            Scanner sc = new Scanner(System.in);
+            sc.next();
+            return null;
+        }
+        for(int i=0; i<comments.size(); i++){
+            Document c = comments.get(i);
+            System.out.println((i+1)+")");
             System.out.println("User: "+ c.getString("user"));
             System.out.println("Time: "+ c.getString("Time"));
             System.out.println("Comment: "+ c.getString("Comment"));
             System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
+        }
+
+        String input;
+        while (true) {
+            System.out.println("If you want to delete your comment press the number of the comment\n" +
+                    "or press 0 to return to the main menu");
+
+            Scanner sc = new Scanner(System.in);
+            input = sc.next();
+            if(input.equals("0"))
+                return null;
+            else if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!\n");
+            else if ((Integer.parseInt(input)) > comments.size())
+                System.out.println("Please select an existing option!\n");
+
+            int j = Integer.parseInt(input)-1;
+            if(!user.getUser_id().equals(comments.get(j).getString("user")))
+                System.out.println("You can't delete this comment!\n");
+            else
+                return comments.get(j).getObjectId("_id").toString();
         }
     }
 
@@ -533,10 +589,11 @@ public class MongoDbConnector {
                 case "3":
                     return "v:"+id;
                 case "4":
-                    showComments(id);
-                    System.out.println("Press any key to continue..");
-                    sc.next();
-                    break;
+                    String ret = showComments(id);
+                    if(ret != null)
+                        return "d:"+ret;
+                    else
+                        return null;
                 default: return null;
             }
         }
@@ -553,7 +610,6 @@ public class MongoDbConnector {
         while(true){
             User u = new User(doc);
             u.printDetails();
-            //user.printDetails();
 
             System.out.println("\nPress 1 to FOLLOW the user\n or press 2 to UNFOLLOW the user\n" +
                     "or press another key to return");

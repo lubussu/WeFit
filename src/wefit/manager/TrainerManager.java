@@ -260,8 +260,8 @@ public class TrainerManager extends UserManager{
 
         if(sc.next().equals("r"))
             return;
-        String id = mongoDb.insertRoutine(workout);
 
+        String id = mongoDb.insertRoutine(workout);
         neo4j.insertRoutine(workout, id);
     }
 
@@ -318,6 +318,7 @@ public class TrainerManager extends UserManager{
     }
 
     public boolean sessionTrainer() throws IOException {
+        mongoDb.setUser(self);
         System.out.println("WELCOME " + self.getName());
         boolean running = true;
         while(running) {

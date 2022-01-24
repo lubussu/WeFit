@@ -11,6 +11,7 @@ import org.bson.types.ObjectId;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.InternalPath;
+import wefit.entities.Comment;
 import wefit.entities.User;
 import wefit.entities.Workout;
 
@@ -29,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Projections.*;
+import static com.mongodb.client.model.Updates.push;
 import static org.neo4j.driver.Values.parameters;
 
 public class Neo4jConnector {
@@ -49,6 +51,19 @@ public class Neo4jConnector {
         };
     }
 
+    public void deleteComment(String user, String routine){
+        try ( Session session = graph_driver.session() ) {
+            session.run("MERGE (u:User {user_id:$user})-[c:COMMENT]->(r:Routine {_id:$routine}) " +
+                            "ON MATCH SET c.num=c.num-1 " +
+                            "UNION ALL " +
+                            "MATCH (u:User {user_id:$user})-[c:COMMENT]->(r:Routine {_id:$routine}) " +
+                            "WHERE c.num=0 " +
+                            "DELETE c ",
+                    parameters("user", user, "routine", routine));
+        };
+        System.out.println("Comment delete successfully!");
+    }
+
     //function for follow a user (add relation in the db)
     public void followUser(String user, String followed){
         try ( Session session = graph_driver.session() ) {
@@ -57,7 +72,7 @@ public class Neo4jConnector {
                             "MERGE (a)-[:FOLLOW]->(b) RETURN a,b",
                     parameters("user", user, "followed", followed));
         };
-        System.out.println("User " + user +" successfully follow!");
+        System.out.println("User " + followed +" successfully follow!");
     }
 
     //show all the routines commented by a given user
@@ -66,7 +81,6 @@ public class Neo4jConnector {
         try ( Session session = graph_driver.session() ) {
             routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
                 List<Record> records;
-
 
                 records = tx.run("MATCH (:User {user_id: $user}) -[r:COMMENT]->(b:Routine) RETURN b AS routine",
                         parameters("user",user)).list();
@@ -100,13 +114,24 @@ public class Neo4jConnector {
         return selectRoutine(routines);
     }
 
-    //function for vote a routine (add relation in the db)
-    public void insertVote(String user_id, String routine_id, int vote){
+    public void insertComment(String user, String routine){
         try ( Session session = graph_driver.session() ) {
             session.run("MATCH (a:User) MATCH (b:Routine) " +
-                            "WHERE a.user_id = $user AND b._id = routine " +
-                            "CREATE (a)-[:VOTE{vote:$vote}]->(b) RETURN a,b",
-                    parameters("user", user_id, "routine", routine_id, "vote", vote));
+                            "WHERE a.user_id = $user AND b._id = $routine " +
+                            "MERGE (a)-[c:COMMENT]->(b) "+
+                            "ON CREATE SET c.num=1 "+
+                            "ON MATCH SET c.num=c.num+1",
+                    parameters("user", user, "routine", routine));
+        };
+    }
+
+    //function for vote a routine (add relation in the db)
+    public void insertVote(String user, String routine, int vote){
+        try ( Session session = graph_driver.session() ) {
+            session.run("MATCH (a:User) MATCH (b:Routine) " +
+                            "WHERE a.user_id = $user AND b._id = $routine " +
+                            "MERGE (a)-[:VOTE{vote:$vote}]->(b) RETURN a,b",
+                    parameters("user", user, "routine", routine, "vote", vote));
         };
         System.out.println("Routine voted successfully!");
     }
@@ -256,41 +281,47 @@ public class Neo4jConnector {
         String id = users.get(Integer.parseInt(input)-1).get("user").get("user_id").toString();
         String trainer = users.get(Integer.parseInt(input)-1).get("user").get("trainer").toString().replace("\"", "");
         System.out.println("Press 1 to see user's details\n"+
-                "or press 2 to see user's routines");
+                "press 2 to see user's routines\n"+
+                "press 3 to follow the user\n"+
+                "press 4 to unfollow the user");
 
         Scanner sc = new Scanner(System.in);
         input = sc.next();
         switch (input){
             case "1":
-                return "u:"+id.replace("\"","");
+                return "d:"+id.replace("\"","");
             case"2": {
-                if (trainer.equals("yes")){
+                if (trainer.equals("yes")){ //the user is a trainer
                     System.out.println("Press 1 to see own routines\n"+
                             "or press 2 to see routine's created");
 
                     input = sc.next();
                     String routine=null;
                     switch (input){
-                        case "1":
+                        case "1": //se own routines
                             routine = showRoutines(id.replace("\"", ""), "all");
                             if (routine != null)
                                 return "r:" + routine;
                             System.out.println("Result not found");
                             break;
-                        case "2":
-                            //routine = showTrainerRoutines(id.replace("\"", ""), "all"); ---> DA FARE
+                        case "2": //see created routines
+                            routine = showCreatedRoutines(id.replace("\"", ""));
                             if (routine != null)
                                 return "r:" + routine;
                             System.out.println("Result not found");
                             break;
                     }
                 }
-                else {
+                else { // the user is not a trainer, see his routines
                     String routine = showRoutines(id.replace("\"", ""), "all");
                     if (routine != null)
                         return "r:" + routine;
                 }
             }
+            case "3":
+                return "f:"+id.replace("\"",""); //follow user
+            case "4":
+                return "u:"+id.replace("\"",""); //unfollow user
         }
         return null;
     }
@@ -456,7 +487,7 @@ public class Neo4jConnector {
                             "DELETE f",
                         parameters("user", user, "followed", followed));
         };
-        System.out.println("User " + user +" succesfully unfollow!");
+        System.out.println("User " + followed +" succesfully unfollow!");
     }
 
 }
