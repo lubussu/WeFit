@@ -1,22 +1,18 @@
 package it.unipi.wefit.db;
-import com.mongodb.BasicDBObject;
 import com.mongodb.ConnectionString;
-import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 import it.unipi.wefit.entities.User;
 import org.bson.Document;
 
-import java.awt.image.AreaAveragingScaleFilter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Sorts.descending;
@@ -31,9 +27,6 @@ import it.unipi.wefit.entities.*;
 
 import static com.mongodb.client.model.Projections.*;
 import java.io.*;
-import java.util.regex.Pattern;
-
-import javax.print.Doc;
 
 public class MongoDbConnector {
     private ConnectionString uri;
@@ -55,25 +48,40 @@ public class MongoDbConnector {
     }
 
     //function for change profile's properties in the db
-    public void changeProfile(User user){
-        try {
-            DeleteResult result = users.deleteOne(eq("user_id", user.getUser_id()));
-        } catch (MongoException me) {
-            System.err.println("Unable to delete due to an error: " + me);
-        }
-        try {
-            InsertOneResult result = users.insertOne(user.toDocument());
-            System.out.println("Success! The profile has been updated.");
-        } catch (MongoException me) {
-            System.err.println("Unable to insert due to an error: " + me);
-        }
+    public boolean changeProfile(User user){
+        ArrayList<Bson> updates = new ArrayList<>();
+        updates.add(set("name", user.getName()));
+        updates.add(set("gender", user.getGender()));
+        updates.add(set("year_of_birth", user.getYear_of_birth()));
+        updates.add(set("height", user.getHeight()));
+        updates.add(set("weight", user.getWeight()));
+        updates.add(set("train", user.getTrain()));
+        updates.add(set("background", user.getBackground()));
+        updates.add(set("experience", user.getExperience()));
+        updates.add(set("email", user.getEmail()));
+        updates.add(set("password", user.getPassword()));
+
+        UpdateResult result = users.updateOne(eq("user_id", user.getUser_id()),updates);
+        return (result.getModifiedCount()==1);
     }
 
-    public void deleteComment(String comment, String routine){
+    public boolean deleteComment(String comment_id, String routine){
         Bson filter = eq("_id", new ObjectId(routine));
-        Bson change = pull("comments_id", comment);
-        workout.updateOne(filter, change);
-        System.out.println("Success! Your comment has been deleted.");
+        Bson change = pull("comments", eq("_id",new ObjectId(comment_id)));
+        UpdateResult result = workout.updateOne(filter, change);
+        return (result.getModifiedCount()==1);
+    }
+
+    public boolean deleteRoutine(Workout w){
+        Bson filter = eq("_id", new ObjectId(w.getId()));
+        DeleteResult result = workout.deleteOne(filter);
+        return result.getDeletedCount()==1;
+    }
+
+    public boolean deleteUser(User user){
+        Bson filter = eq("user_id", user.getUser_id());
+        DeleteResult result = users.deleteOne(filter);
+        return result.getDeletedCount()==1;
     }
 
     public Bson getFilter(String field, String value, String option){
@@ -140,12 +148,12 @@ public class MongoDbConnector {
     }
 
     //function to insert a comment in the db
-    public void insertComment(Comment comment, String id){
+    public boolean insertComment(Comment comment, String id){
         Bson filter = eq("_id", new ObjectId(id));
         Document com = comment.toDocument().append("_id", new ObjectId());
         Bson change = push("comments", com);
-        workout.updateOne(filter, change);
-        System.out.println("Success! Your comment has been inserted.");
+        UpdateResult result = workout.updateOne(filter, change);
+        return (result.getModifiedCount()==1);
     }
 
     //function to insert a new exercise in the db
@@ -162,16 +170,25 @@ public class MongoDbConnector {
     public String insertRoutine(Workout routine){
         try {
             InsertOneResult result = workout.insertOne(routine.toDocument());
-            System.out.println("Success! Your routine has been inserted.");
             return result.getInsertedId().toString();
         } catch (MongoException me) {
-            System.err.println("Unable to insert due to an error: " + me);
+            return null;
         }
-        return null;
+    }
+
+    //function for signUp in the app (insert new user in the db)
+    public boolean insertUser(User us){
+        Document user = us.toDocument();
+        try {
+            InsertOneResult result = users.insertOne(user);
+            return (result!=null);
+        } catch (MongoException me) {
+            return false;
+        }
     }
 
     //function to insert a vote in the db
-    public void insertVote(String routine_id, int vote){
+    public boolean insertVote(String routine_id, int vote){
         double score;
         int nVotes;
         Document routine = workout.find(eq("_id", new ObjectId(routine_id))).first();
@@ -185,9 +202,11 @@ public class MongoDbConnector {
 
         System.out.println(nVotes + " " + score);
 
-        workout.updateOne(eq("_id", new ObjectId(routine_id)), set("vote", score));
-        workout.updateOne(eq("_id", new ObjectId(routine_id)), set("num_votes", nVotes));
-        System.out.println("Success! Your comment has been inserted.");
+        ArrayList<Bson> updates = new ArrayList<>();
+        updates.add(set("vote", score));
+        updates.add(set("num_votes", nVotes));
+        UpdateResult result = workout.updateOne(eq("_id", new ObjectId(routine_id)), updates);
+        return (result.getModifiedCount()==1);
     }
 
     //function to get the user_id of the last user (to insert a new user)
@@ -452,17 +471,6 @@ public class MongoDbConnector {
     public Document signIn(String username, String password) {
         Document doc = users.find(and(eq("email",username),eq("password",password))).first();
         return doc;
-    }
-
-    //function for signUp in the app (insert new user in the db)
-    public void signUp(User us){
-        Document user = us.toDocument();
-        try {
-            InsertOneResult result = users.insertOne(user);
-            System.out.println("Success! Inserted document id: " + result.getInsertedId());
-        } catch (MongoException me) {
-            System.err.println("Unable to insert due to an error: " + me);
-        }
     }
 
     public void showAvgAgeLvl(String threshold){

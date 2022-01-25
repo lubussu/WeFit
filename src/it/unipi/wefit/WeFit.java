@@ -11,6 +11,9 @@ import it.unipi.wefit.entities.*;
 import it.unipi.wefit.manager.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.Scanner;
 
@@ -81,4 +84,5 @@ public class WeFit {
             } catch (IOException e) {e.printStackTrace();}
         }
     }
+
 }

@@ -167,8 +167,16 @@ public class TrainerManager extends UserManager{
             return;
 
         user.setTrainer("yes");
-        mongoDb.changeProfile(user);
-        neo4j.changeProfile(user);
+        //management of the consistency
+        if(neo4j.changeProfile(user)) { //neo4j correctly modify
+            if(!mongoDb.changeProfile(user)){ //mongodb not modify
+                String message = "ERROR USER: Unable to promote ["+self.getUser_id()+"] on MongoDB\n";
+                saveError(file, message);
+            }
+            System.out.println("Success! The profile has been updated\n");
+        }
+        else
+            System.err.println("Unable to change the profile!\n");
     }
 
     // Create a routine for a user
@@ -201,7 +209,7 @@ public class TrainerManager extends UserManager{
         int n = 0;
 
         // cycle all the 17 muscle groups to insert one exercise each
-        while(n<1){
+        while(n<17){
             Exercise e = insertExercise(Muscles[n],null);
             if(e==null)
                 return;
@@ -259,8 +267,24 @@ public class TrainerManager extends UserManager{
         if(sc.next().equals("r"))
             return;
 
+        //management of consistency between db
         String id = mongoDb.insertRoutine(workout);
-        neo4j.insertRoutine(workout, id);
+        if(id != null) { //mongodb correctly inserted
+            if(neo4j.insertRoutine(workout, id)) //neo4j correctly inserted
+                System.out.println("Success! The routine has been inserted\n");
+            else {
+                if(!mongoDb.deleteRoutine(workout)) {
+                    String message = "ERROR ROUTINE: Unable to create ["+workout.getId()+","+
+                            workout.getUser()+","+workout.getTrainer()+","+workout.getLevel()+","+
+                            workout.getStarting_day()+","+workout.getEnd_day()+"] on Neo4j\n";
+                    saveError(file, message);
+                }
+                else
+                    System.err.println("Error! Unable to insert the routine\n");
+            }
+        }
+        else
+            System.err.println("Error! Unable to insert the routine\n");
     }
 
     //function for insert an exercise in a new routine

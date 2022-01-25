@@ -12,7 +12,9 @@ import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.InternalPath;
 import it.unipi.wefit.entities.*;
+import org.neo4j.driver.summary.ResultSummary;
 
+import javax.naming.ServiceUnavailableException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,31 +37,40 @@ public class Neo4jConnector {
     private Driver graph_driver;
 
     public Neo4jConnector(String conn, String username, String password){
-        graph_driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
+            graph_driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
     }
 
     //function for change profile's properties in the db
-    public void changeProfile(User us){
+    public boolean changeProfile(User us){
         try ( Session session = graph_driver.session() ) {
-            session.run("MATCH (a:User) WHERE a.user_id = $user "+
+            ResultSummary rs = session.run("MATCH (a:User) WHERE a.user_id = $user "+
                     "SET a.name=$name, a.gender=$gender, a.birth=$birth, a.level=$level, a.trainer=$trainer",
                     parameters("user", us.getUser_id(), "name", us.getName(),
                             "gender", us.getGender(), "birth", us.getYear_of_birth(),
-                            "level", us.getLevel(), "trainer", us.getTrainer()));
-        };
+                            "level", us.getLevel(), "trainer", us.getTrainer())).consume();
+            return (rs.counters().nodesCreated()==1);
+        }
     }
 
-    public void deleteComment(String user, String routine){
+    public boolean deleteComment(String user, String routine){
         try ( Session session = graph_driver.session() ) {
-            session.run("MERGE (u:User {user_id:$user})-[c:COMMENT]->(r:Routine {_id:$routine}) " +
+            ResultSummary rs = session.run("MERGE (u:User {user_id:$user})-[c:COMMENT]->(r:Routine {_id:$routine}) " +
                             "ON MATCH SET c.num=c.num-1 " +
                             "UNION ALL " +
                             "MATCH (u:User {user_id:$user})-[c:COMMENT]->(r:Routine {_id:$routine}) " +
                             "WHERE c.num=0 " +
                             "DELETE c ",
-                    parameters("user", user, "routine", routine));
-        };
-        System.out.println("Comment delete successfully!");
+                    parameters("user", user, "routine", routine)).consume();
+            return(rs.counters().relationshipsDeleted()==1 || rs.counters().propertiesSet()>1);
+        }
+    }
+
+    public boolean deleteUser(User user){
+        try ( Session session = graph_driver.session() ) {
+            ResultSummary rs = session.run("MATCH (u:User {user_id:$user}) DELETE u",
+                    parameters("user", user)).consume();
+            return (rs.counters().nodesDeleted()==1);
+        }
     }
 
     //function for follow a user (add relation in the db)
@@ -112,48 +123,54 @@ public class Neo4jConnector {
         return selectRoutine(routines);
     }
 
-    public void insertComment(String user, String routine){
+    public boolean insertComment(String user, String routine){
         try ( Session session = graph_driver.session() ) {
-            session.run("MATCH (a:User) MATCH (b:Routine) " +
+            ResultSummary rs = session.run("MATCH (a:User) MATCH (b:Routine) " +
                             "WHERE a.user_id = $user AND b._id = $routine " +
                             "MERGE (a)-[c:COMMENT]->(b) "+
                             "ON CREATE SET c.num=1 "+
                             "ON MATCH SET c.num=c.num+1",
-                    parameters("user", user, "routine", routine));
-        };
+                    parameters("user", user, "routine", routine)).consume();
+            return (rs.counters().propertiesSet()==1);
+        }
     }
 
     //function for vote a routine (add relation in the db)
-    public void insertVote(String user, String routine, int vote){
+    public boolean insertVote(String user, String routine, int vote){
         try ( Session session = graph_driver.session() ) {
-            session.run("MATCH (a:User) MATCH (b:Routine) " +
-                            "WHERE a.user_id = $user AND b._id = $routine " +
-                            "MERGE (a)-[:VOTE{vote:$vote}]->(b) RETURN a,b",
-                    parameters("user", user, "routine", routine, "vote", vote));
-        };
-        System.out.println("Routine voted successfully!");
+            ResultSummary rs = session.run("MATCH (u:User {user_id:$user}) MATCH (r:Routine {_id:$routine}) " +
+                            "MERGE (u)-[s:VOTE]->(r) " +
+                            "ON CREATE SET s.vote=$vote " +
+                            "UNION ALL " +
+                            "MATCH (r:Routine {_id:$routine})<-[s:VOTE]-() " +
+                            "WITH r, AVG(s.vote) AS avg SET r.vote=round(avg,3)",
+                    parameters("user", user, "routine", routine, "vote", vote)).consume();
+            return (rs.counters().relationshipsCreated()==1);
+        }
     }
 
     //function for add a new user (add a node in the db)
-    public void insertUser(User user) {
+    public boolean insertUser(User user) {
         try ( Session session = graph_driver.session() )
         {
-            session.run("CREATE (a:User {user_id:$user_id, name:$name, gender:$gender, birth:$birth, level:$level, trainer:$trainer})",
+            ResultSummary rs = session.run("CREATE (a:User {user_id:$user_id, name:$name, gender:$gender, birth:$birth, level:$level, trainer:$trainer})",
                     parameters("user_id", user.getUser_id(), "name", user.getName(), "gender", user.getGender(),
-                            "birth",user.getYear_of_birth(),"level",user.getLevel(), "trainer", user.getTrainer()));
-        };
+                            "birth",user.getYear_of_birth(),"level",user.getLevel(), "trainer", user.getTrainer())).consume();
+            return (rs.counters().nodesCreated()==1);
+        }
     }
 
     //function for add a new routine (add a node in the db)
-    public void insertRoutine(Workout routine, String id) {
+    public boolean insertRoutine(Workout routine, String id) {
         try ( Session session = graph_driver.session() )
         {
-            session.run("MATCH (a:User {user_id:$user}) MATCH (b:User {user_id:$trainer})" +
+            ResultSummary rs = session.run("MATCH (a:User {user_id:$user}) MATCH (b:User {user_id:$trainer})" +
                     "CREATE (r:Routine {_id: $id, user:$user, trainer:$trainer, level:$level, starting_day:$s_day, end_day:$e_day}) "+
                     "CREATE (a)-[:HAS_ROUTINE]->(r) CREATE (b)-[:CREATE_ROUTINE]->(r)",
                     parameters("id", id,"user", routine.getUser(), "trainer", routine.getTrainer(), "level", routine.getLevel(),
-                            "s_day",routine.getStarting_day(),"e_day",routine.getEnd_day()));
-        };
+                            "s_day",routine.getStarting_day(),"e_day",routine.getEnd_day())).consume();
+            return (rs.counters().nodesCreated()==1);
+        }
     }
 
     public String mostFollowedUsers(int num){

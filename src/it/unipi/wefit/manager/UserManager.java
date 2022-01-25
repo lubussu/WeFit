@@ -14,6 +14,10 @@ import javax.swing.text.html.HTMLDocument;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +36,8 @@ public class UserManager {
     protected MongoDbConnector mongoDb;
     protected Neo4jConnector neo4j;
 
+    protected String file = "./error_log.txt";
+
     public UserManager(User user, MongoDbConnector mongo){
         this.self = user;
         this.mongoDb = mongo;
@@ -49,8 +55,17 @@ public class UserManager {
             return;
         c.setComment(input);
         c.setUser(self.getUser_id());
-        mongoDb.insertComment(c, routine_id);
-        neo4j.insertComment(c.getUser(), routine_id);
+
+        //management of the consistency among db
+        if(mongoDb.insertComment(c, routine_id)) {  //mongo db correctly inserted
+            if(!neo4j.insertComment(c.getUser(), routine_id)){ //neo4j not inserted
+                String message = "ERROR COMMENT: Unable to insert [" + c.getUser()+ "," + routine_id+"] on Neo4j\n";
+                saveError(file, message);
+            }
+            System.out.println("Success! Your comment has been inserted\n");
+        }
+        else //mongodb not inserted
+            System.err.println("Unable to insert the comment!\n");
     }
 
     //function for vote a routine
@@ -59,8 +74,17 @@ public class UserManager {
         System.out.println("Please insert your vote (1-5) or press r to return...");
         String vote_string = insertNumber();
         int vote = Integer.parseInt(vote_string);
-        mongoDb.insertVote(routine_id, vote);
-        neo4j.insertVote(self.getUser_id(), routine_id, vote);
+
+        //management of the consistency among db
+        if(neo4j.insertVote(self.getUser_id(), routine_id, vote)) { //neo4j correctly inserted
+            if(!mongoDb.insertVote(routine_id, vote)){ //mongodb not inserted
+                String message = "ERROR VOTE: Unable to insert [" + self.getUser_id()+","+routine_id+ "," + vote + "] on MongoDB\n";
+                saveError(file, message);
+            }
+            System.out.println("Success! Your vote has been inserted\n");
+        }
+        else //neo4j not inserted
+            System.err.println("Unable to insert the vote!\n");
     }
 
     //function for change profile's properties
@@ -155,11 +179,22 @@ public class UserManager {
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
                 }
-                case "0":
-                    self = new_user;
-                    mongoDb.changeProfile(self);
-                    neo4j.changeProfile(self);
+                case "0": {
+                    //management of the consistency among db
+                    if (mongoDb.changeProfile(new_user)) { //mongodb correctly inserted
+                        self = new_user;
+                        if(!neo4j.changeProfile(new_user)){ //neo4j not inserted
+                            String message = "ERROR USER: Unable to modify ["+self.getUser_id()+","+ self.getName()+","+
+                                    self.getGender()+","+ self.getYear_of_birth()+","+
+                                    self.getLevel()+","+self.getTrainer()+"] on Neo4j\n";
+                            saveError(file, message);
+                        }
+                        System.out.println("Success! The profile has been updated\n");
+
+                    } else //mongodb not inserted
+                        System.err.println("Unable to change the profile!\n");
                     return;
+                }
                 case "r":
                     return;
             }
@@ -167,11 +202,18 @@ public class UserManager {
     }
 
     public void deleteComment(String comment, String routine){
-        mongoDb.deleteComment(comment, routine);
-        neo4j.deleteComment(self.getUser_id(), routine);
+        if(mongoDb.deleteComment(comment, routine)) {
+            if(!neo4j.deleteComment(self.getUser_id(), routine)){
+                String message = "ERROR COMMENT: Unable to delete [" + self.getUser_id()+ "," + routine+"] on Neo4j\n";
+                saveError(file, message);
+            }
+            System.out.println("Comment correctly deleted!\n");
+        }
+        else
+            System.err.println("Unable to delete the comment!\n");
     }
 
-    //function for insert a number (it ask until read is correct)
+    //function for insert a number (it asks until read is correct)
     public String insertNumber(){
         Scanner sc = new Scanner(System.in);
         String input;
@@ -287,7 +329,7 @@ public class UserManager {
                         return;
                     else if(option.startsWith("c:"))
                         addComment(option.substring(2));
-                    else if(option.startsWith(option.substring(2)))
+                    else if(option.startsWith("v:"))
                         addVote(option.substring(2));
                     return;
                 case "r":
@@ -518,6 +560,14 @@ public class UserManager {
             deleteComment(option.substring(2), routine);
     }
 
+    public void saveError(String file, String message){
+        try{
+            Files.write(Paths.get(file), message.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            System.out.println("Unable to save error on file\n");
+        }
+    }
+
     public boolean session() throws IOException {
         mongoDb.setUser(self);
         System.out.println("WELCOME " + self.getName());
@@ -633,12 +683,31 @@ public class UserManager {
         int user = mongoDb.lastUser();
         self = new User(name, gender, yob, height, weight, training, bg, exp, email, password, level, "no", Integer.toString(user));
 
-        mongoDb.signUp(self);
-        neo4j.insertUser(self);
-        System.out.println("\nNice, from now on your are a member of the it.unipi.wefit.community,\n" +
-                "soon one of our trainer will contact you to assign a training level\n" +
-                "and build a personal routine with you!\n" +
-                "We hope your stay here will be a pleasurable one!\n");
+        //management of the consistency among db
+        if(mongoDb.insertUser(self)){ //mongodb correctly inserted
+            if(neo4j.insertUser(self)) //neo4j correctly inserted
+                System.out.println("\nNice, from now on your are a member of the it.unipi.wefit.community,\n" +
+                        "soon one of our trainer will contact you to assign a training level\n" +
+                        "and build a personal routine with you!\n" +
+                        "We hope your stay here will be a pleasurable one!\n");
+            else { //neo4j not inserted
+                if(!mongoDb.deleteUser(self)){
+                    String message = "ERROR USER: Unable to create ["+self.getUser_id()+","+ self.getName()+","+
+                            self.getGender()+","+ self.getYear_of_birth()+","+
+                            self.getLevel()+","+self.getTrainer()+"] on Neo4j\n";
+                    saveError(file, message);
+                }
+                else {
+                    System.err.println("Error! Unable to signUp\n");
+                    return true;
+                }
+            }
+        }
+        else{
+            System.err.println("Error! Unable to signUp\n");
+            return true;
+        }
+
         if (session()==false)
             return false; //exit the application
         return true;
