@@ -2,6 +2,7 @@
 package it.unipi.wefit;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.*;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.bson.Document;
 import org.neo4j.driver.*;
 import org.neo4j.driver.types.Node;
@@ -35,7 +36,7 @@ public class WeFit {
             switch (input) {
                 case "1": {
                     mongoDb = new MongoDbConnector("mongodb://localhost:27017","wefit");
-                    signIn();
+                    logIn();
                     break;
                 }
                 case "2": {
@@ -55,19 +56,21 @@ public class WeFit {
         }
     }
 
-    public static void signIn() {
+    public static void logIn() {
         String email, password;
         System.out.println("Please insert your email...");
         Scanner sc = new Scanner(System.in);
         email = sc.next();
         System.out.println("now insert your password...");
-        password = sc.next();
-        Document d = mongoDb.signIn(email, password);
-        if(d==null) {
+        password = new DigestUtils("SHA3-256").digestAsHex(sc.next());
+
+        try {
+            user = new User(mongoDb.signIn(email, password));
+        }catch(NullPointerException npe){
             System.out.println("Incorrect email or password, please retry!");
+            System.out.println();
             return;
         }
-        user = new User(mongoDb.signIn(email, password));
 
         if (user != null && user.getTrainer().equals("no")) {
             UserManager uM = new UserManager(user, mongoDb);

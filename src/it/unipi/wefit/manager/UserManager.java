@@ -2,6 +2,7 @@ package it.unipi.wefit.manager;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -677,7 +678,7 @@ public class UserManager {
         if(email.equals("r"))
             return true;
         System.out.println("Choose a password...");
-        password = sc.next();
+        password = new DigestUtils("SHA3-256").digestAsHex(sc.next());
         if(password.equals("r"))
             return true;
         int user = mongoDb.lastUser();
