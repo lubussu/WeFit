@@ -355,7 +355,7 @@ public class TrainerManager extends UserManager{
                     "7)  Find most fidelity users\n" +
                     "8)  Find most used equipments per muscle\n" +
                     "9)  Find most common exercises in most rated routines\n" +
-                    "10) Show level up\n" +
+                    "10) Show level-ups\n" +
                     "-----------------------------\n" +
                     "11) Log out\n" +
                     "0)  Exit the app");
