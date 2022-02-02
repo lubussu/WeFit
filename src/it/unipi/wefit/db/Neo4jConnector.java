@@ -48,7 +48,7 @@ public class Neo4jConnector {
                     parameters("user", us.getUser_id(), "name", us.getName(),
                             "gender", us.getGender(), "birth", us.getYear_of_birth(),
                             "level", us.getLevel(), "trainer", us.getTrainer())).consume();
-            return (rs.counters().nodesCreated()==1);
+            return (rs.counters().propertiesSet()>1);
         }
     }
 
@@ -65,28 +65,23 @@ public class Neo4jConnector {
         }
     }
 
-    public boolean deleteUser(User user){
+    //function for follow a user (add relation in the db)
+    public boolean followUser(String user, String followed){
         try ( Session session = graph_driver.session() ) {
-            ResultSummary rs = session.run("MATCH (u:User {user_id:$user}) DELETE u",
-                    parameters("user", user)).consume();
-            return (rs.counters().nodesDeleted()==1);
+            ResultSummary rs = session.run("MATCH (a:User) MATCH (b:User) " +
+                            "WHERE a.user_id = $user AND b.user_id = $followed " +
+                            "MERGE (a)-[:FOLLOW]->(b) RETURN a,b",
+                    parameters("user", user, "followed", followed)).consume();
+
+            if(rs.counters().relationshipsCreated()==0)
+                System.out.println("You have already follow this user!");
+            return (rs.counters().relationshipsCreated()==1);
         }
     }
 
-    //function for follow a user (add relation in the db)
-    public void followUser(String user, String followed){
-        try ( Session session = graph_driver.session() ) {
-            session.run("MATCH (a:User) MATCH (b:User) " +
-                            "WHERE a.user_id = $user AND b.user_id = $followed " +
-                            "MERGE (a)-[:FOLLOW]->(b) RETURN a,b",
-                    parameters("user", user, "followed", followed));
-        };
-        System.out.println("User " + followed +" successfully follow!");
-    }
-
     //show all the routines commented by a given user
-    public String showCommentedRoutines(String user) {
-        ArrayList<Record> routines = new ArrayList<>();
+    public ArrayList<Workout> showCommentedRoutines(String user) {
+        ArrayList<Record> routines;
         try ( Session session = graph_driver.session() ) {
             routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
                 List<Record> records;
@@ -99,12 +94,11 @@ public class Neo4jConnector {
                 return records;
             });
         };
-        printRoutines(routines, 10);
-        return selectRoutine(routines);
+        return returnRoutines(routines);
     }
 
     //show all the routines of a given trainer
-    public String showCreatedRoutines(String trainer) {
+    public ArrayList<Workout> showCreatedRoutines(String trainer) {
         ArrayList<Record> routines;
         try ( Session session = graph_driver.session() ) {
             routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
@@ -119,8 +113,7 @@ public class Neo4jConnector {
                 return (ArrayList<Record>) records;
             });
         };
-        printRoutines(routines, 10);
-        return selectRoutine(routines);
+        return returnRoutines(routines);
     }
 
     public boolean insertComment(String user, String routine){
@@ -145,6 +138,8 @@ public class Neo4jConnector {
                             "MATCH (r:Routine {_id:$routine})<-[s:VOTE]-() " +
                             "WITH r, AVG(s.vote) AS avg SET r.vote=round(avg,3)",
                     parameters("user", user, "routine", routine, "vote", vote)).consume();
+            if(rs.counters().relationshipsCreated()==0)
+                System.out.println("You have already vote this routine!");
             return (rs.counters().relationshipsCreated()==1);
         }
     }
@@ -173,33 +168,32 @@ public class Neo4jConnector {
         }
     }
 
-    public String mostFollowedUsers(int num){
+    public ArrayList<User> mostFollowedUsers(int num){
         String query = "MATCH ()-[f:FOLLOW]->(u:User) "+
                 "WITH u, COUNT(f) AS num_followers "+
                 "RETURN u AS user, num_followers ORDER BY num_followers DESC LIMIT $num";
 
-        ArrayList<Record> trainers;
+        ArrayList<Record> users;
         try ( Session session = graph_driver.session() ) {
-            trainers = (ArrayList<Record>) session.readTransaction(tx -> {
+            users = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> records;
                 records = tx.run(query, parameters("num", num)).list();
                 return records;
             });
-
             System.out.printf("%5s %10s %20s %10s %10s %15s", "     ", "User_Id", "Name", "Gender", "Trainer", "Followers\n");
             System.out.println("--------------------------------------------------------------------------------------------------------");
-            for(int i=0; i<trainers.size(); i++) {
-                Record r = trainers.get(i);
+            for(int i=0; i<users.size(); i++) {
+                Record r = users.get(i);
                 System.out.printf("%5s %10s %20s %10s %10s %15s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
                         r.get("user").get("gender").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""),
                         r.get("num_followers").toString());
                 System.out.println("\n");
             }
         };
-        return selectUser(trainers);
+        return returnUsers(users);
     }
 
-    public String mostRatedTrainers(int num){
+    public ArrayList<User> mostRatedTrainers(int num){
         String query = "MATCH ()-[v:VOTE]->(r:Routine)<-[:CREATE_ROUTINE]-(u:User) "+
                 "WITH u, AVG(toInteger(v.vote)) AS avg_vote "+
                 "RETURN u AS user, avg_vote ORDER BY avg_vote DESC LIMIT $num";
@@ -224,7 +218,7 @@ public class Neo4jConnector {
                 System.out.println("\n");
             }
         };
-        return selectUser(trainers);
+        return returnUsers(trainers);
     }
 
     //function for print summary information of the given routines
@@ -235,7 +229,7 @@ public class Neo4jConnector {
         for(int i=0; i<rec.size(); i++) {
             Record r = rec.get(i);
             System.out.printf("%5s", (i+1)+") ");
-            Workout w = new Workout(null, r.get("routine").get("trainer").toString().replace("\"",""),
+            Workout w = new Workout(null, null, r.get("routine").get("trainer").toString().replace("\"",""),
                     r.get("routine").get("level").toString().replace("\"",""),
                     -1, -1, -1, null, null, null,
                     r.get("routine").get("starting_day").toString().replace("\"",""),
@@ -252,119 +246,38 @@ public class Neo4jConnector {
         }
     }
 
-    //function for print summary information of the given users
-    public void printUsers(ArrayList<Record> rec, int num) {
-        int cycle = 0;
-        System.out.printf("%5s %10s %20s %10s %15s %15s %10s", "     ", "User_Id", "Name", "Gender", "Year of birth", "Level","Trainer\n");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
-        for(int i=0; i<rec.size(); i++) {
-            Record r = rec.get(i);
-            System.out.printf("%5s", (i+1)+") ");
-            User u = new User(r.get("user").get("name").toString().replace("\"",""), r.get("user").get("gender").toString().replace("\"",""),
-                    r.get("user").get("birth").toString().replace("\"",""), null, null, null, null, null, null, null,
-                    r.get("user").get("level").toString().replace("\"",""), r.get("user").get("trainer").toString().replace("\"",""),
-                    r.get("user").get("user_id").toString().replace("\"",""));
-            u.print();
-            cycle++;
-            if(cycle == num){
-                System.out.println("Insert m to see more or another key to continue...");
-                Scanner sc = new Scanner(System.in);
-                if(sc.next().equals("m")) cycle = 0;
-                else return;
-            }
+    public ArrayList<Workout> returnRoutines(ArrayList<Record> routines){
+        ArrayList<Workout> works = new ArrayList<>();
+        for(Record r: routines){
+            works.add(new Workout(  r.get("routine").get("_id").toString().replace("\"", ""),
+                    r.get("routine").get("user").toString().replace("\"", ""),
+                    r.get("routine").get("trainer").toString().replace("\"", ""),
+                    r.get("routine").get("level").toString().replace("\"", ""),
+                    0, 0, 0, null, null, null,
+                    r.get("routine").get("starting_day").toString().replace("\"", ""),
+                    r.get("routine").get("end_day").toString().replace("\"", ""),
+                    null, 0,
+                    Double.parseDouble(r.get("routine").get("vote").toString())));
         }
-    }
-    
-    //function to select a user from given users
-    public String selectUser(ArrayList<Record> users){
-        String input;
-        while (true) {
-            System.out.println("Press the number of the user you want to select\n" +
-                    "or press r to return to the main menu");
-
-            Scanner sc = new Scanner(System.in);
-            input = sc.next();
-            if(input.equals("r"))
-                return null;
-            if (!input.matches("[0-9.]+"))
-                System.out.println("Please select an existing option!");
-            else if ((Integer.parseInt(input)) > users.size())
-                System.out.println("Please select an existing option!\n");
-            else
-                break;
-        }
-
-        String id = users.get(Integer.parseInt(input)-1).get("user").get("user_id").toString();
-        String trainer = users.get(Integer.parseInt(input)-1).get("user").get("trainer").toString().replace("\"", "");
-        System.out.println("Press 1 to see user's details\n"+
-                "press 2 to see user's routines\n"+
-                "press 3 to follow the user\n"+
-                "press 4 to unfollow the user");
-
-        Scanner sc = new Scanner(System.in);
-        input = sc.next();
-        switch (input){
-            case "1":
-                return "d:"+id.replace("\"","");
-            case"2": {
-                if (trainer.equals("yes")){ //the user is a trainer
-                    System.out.println("Press 1 to see own routines\n"+
-                            "or press 2 to see routine's created");
-
-                    input = sc.next();
-                    String routine=null;
-                    switch (input){
-                        case "1": //se own routines
-                            routine = showRoutines(id.replace("\"", ""), "all");
-                            if (routine != null)
-                                return "r:" + routine;
-                            System.out.println("Result not found");
-                            break;
-                        case "2": //see created routines
-                            routine = showCreatedRoutines(id.replace("\"", ""));
-                            if (routine != null)
-                                return "r:" + routine;
-                            System.out.println("Result not found");
-                            break;
-                    }
-                }
-                else { // the user is not a trainer, see his routines
-                    String routine = showRoutines(id.replace("\"", ""), "all");
-                    if (routine != null)
-                        return "r:" + routine;
-                }
-            }
-            case "3":
-                return "f:"+id.replace("\"",""); //follow user
-            case "4":
-                return "u:"+id.replace("\"",""); //unfollow user
-        }
-        return null;
+        return works;
     }
 
-    //function to select a routine from given routines
-    public String selectRoutine(ArrayList<Record> routines){
-        String input;
-        while (true) {
-            System.out.println("Press the number of the routine you want to select\n" +
-                    "or press r to return to the main menu");
-
-            Scanner sc = new Scanner(System.in);
-            input = sc.next();
-            if(input.equals("r"))
-                return null;
-            if (!input.matches("[0-9.]+"))
-                System.out.println("Please select an existing option!");
-            else if ((Integer.parseInt(input)) > routines.size())
-                System.out.println("Please select an existing option!\n");
-            else
-                break;
+    public ArrayList<User> returnUsers(ArrayList<Record> users){
+        ArrayList<User> us = new ArrayList<>();
+        for(Record r: users){
+            us.add(new User(    r.get("user").get("name").toString().replace("\"", ""),
+                                r.get("user").get("gender").toString().replace("\"", ""),
+                                r.get("user").get("birth").toString().replace("\"", ""),
+                                null, null, null, null, null, null,null,
+                                r.get("user").get("level").toString().replace("\"", ""),
+                                r.get("user").get("trainer").toString().replace("\"", ""),
+                                r.get("user").get("user_id").toString().replace("\"", "")));
         }
-        return routines.get(Integer.parseInt(input)-1).get("routine").get("_id").toString().replace("\"","");
+        return us;
     }
 
     //function for retry the list of followers/followed users (and select one of them)
-    public String showFollowUsers(String user, String option){
+    public ArrayList<User> showFollowUsers(String user, String option){
         String query;
         if(option.equals("followed"))
             query="MATCH (a:User)-[:FOLLOW]->(b:User) WHERE a.user_id = $user RETURN b AS user";
@@ -377,14 +290,14 @@ public class Neo4jConnector {
                 persons = tx.run(query, parameters("user", user)).list();
                 return persons;
             });
-            printUsers(users, 10);
         };
-            return selectUser(users);
+        return returnUsers(users);
     }
 
-    public String showRecommended(String id) {
+    public ArrayList<User> showRecommended(String id) {
+        ArrayList<Record> recommended;
         try (Session session = graph_driver.session()) {
-            ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
+            recommended = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
                 persons = tx.run("MATCH (a:User)-[:FOLLOW]->(b:User)-[:FOLLOW]->(c:User) WHERE a.user_id = $user " +
                                 "AND NOT exists((a)-[:FOLLOW]->(c)) AND " +
@@ -393,8 +306,7 @@ public class Neo4jConnector {
                         parameters("user", id)).list();
                 return persons;
             });
-            printUsers(recommended, 5);
-            return selectUser(recommended);
+            return returnUsers(recommended);
         }
     }
 
@@ -446,7 +358,7 @@ public class Neo4jConnector {
         }
     }
 
-    public String showMostFidelityUsers(int num){
+    public ArrayList<User> showMostFidelityUsers(int num){
 
         String date = LocalDate.now().toString();
         try (Session session = graph_driver.session()) {
@@ -468,13 +380,13 @@ public class Neo4jConnector {
                         r.get("first_routine").toString().replace("\"", ""));
                 System.out.println("\n");
             }
-            return selectUser(users);
+            return returnUsers(users);
         }
     }
 
     //function to show all the routines (past or current) of the given user
-    public String showRoutines(String user, String period){
-        ArrayList<Record> routines = new ArrayList<>();
+    public ArrayList<Workout> showRoutines(String user, String period){
+        ArrayList<Record> routines;
         try ( Session session = graph_driver.session() ) {
             routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
                 List<Record> records;
@@ -490,20 +402,21 @@ public class Neo4jConnector {
                 ArrayList<Record> results = new ArrayList<>();
                 return records;
             });
-        };
-        printRoutines(routines, 10);
-        return selectRoutine(routines);
+        }
+        return returnRoutines(routines);
     }
 
     //function for unfollow a user (add relation in the db)
-    public void unfollowUser(String user, String followed){
+    public boolean unfollowUser(String user, String followed){
         try ( Session session = graph_driver.session() ) {
-            session.run("MATCH (a:User)-[f:FOLLOW]->(b:User) " +
+            ResultSummary rs = session.run("MATCH (a:User)-[f:FOLLOW]->(b:User) " +
                             "WHERE a.user_id = $user AND b.user_id = $followed " +
                             "DELETE f",
-                        parameters("user", user, "followed", followed));
-        };
-        System.out.println("User " + followed +" succesfully unfollow!");
+                        parameters("user", user, "followed", followed)).consume();
+            if(rs.counters().relationshipsDeleted()==0)
+                System.out.println("You don't follow this user!");
+            return (rs.counters().relationshipsDeleted()==1);
+        }
     }
 
 }

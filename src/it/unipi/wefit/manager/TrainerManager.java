@@ -31,8 +31,6 @@ public class TrainerManager extends UserManager{
     }
 
     public void addExercise() throws IOException {
-        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-        Scanner sc = new Scanner(System.in);
         int r = 0;
         String exerciseName = null;
         String exerciseType = null;
@@ -156,7 +154,6 @@ public class TrainerManager extends UserManager{
     //change a user from normal user to trainer
     public void addTrainer() throws IOException {
         System.out.println("Insert the name or the user_id of the user you want to promote or press r to return..");
-        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
 
         String input = bufferRead.readLine();
         if(input.equals("r"))
@@ -170,8 +167,8 @@ public class TrainerManager extends UserManager{
         //management of the consistency
         if(neo4j.changeProfile(user)) { //neo4j correctly modify
             if(!mongoDb.changeProfile(user)){ //mongodb not modify
-                String message = "ERROR USER: Unable to promote ["+self.getUser_id()+"] on MongoDB\n";
-                saveError(file, message);
+                String message = "ERROR USER: Unable to promote ["+self.getUser_id()+"]\n";
+                saveError(log_mongo, message);
             }
             System.out.println("Success! The profile has been updated\n");
         }
@@ -181,8 +178,6 @@ public class TrainerManager extends UserManager{
 
     // Create a routine for a user
     public void createRoutine() throws IOException {
-        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-        Scanner sc = new Scanner(System.in);
 
         // insert name and query the db for the user
         System.out.println("\nInsert the name of the user or the user_id or press r to return...");
@@ -222,7 +217,7 @@ public class TrainerManager extends UserManager{
             Exercise exercise = null;
             String fetch;
             if(running == 0){
-                System.out.print("\nAdding warm_um exercises..");
+                System.out.print("\nAdding warm_up exercises..");
                 exercise = insertExercise(null, "Cardio");
                 if(exercise==null)
                     return;
@@ -257,7 +252,7 @@ public class TrainerManager extends UserManager{
         System.out.println("Insert the number of repetitions of the routine...");
         String rep = insertNumber();
 
-        Workout workout = new Workout(user, self.getUser_id(), level,Integer.parseInt(work), Integer.parseInt(rest),
+        Workout workout = new Workout(null, user, self.getUser_id(), level,Integer.parseInt(work), Integer.parseInt(rest),
                 Integer.parseInt(rep), warmup,exercises,stretching, LocalDate.now().toString(),
                 LocalDate.now().plusMonths(1).toString(), null, 0, 0);
 
@@ -276,8 +271,8 @@ public class TrainerManager extends UserManager{
                 if(!mongoDb.deleteRoutine(workout)) {
                     String message = "ERROR ROUTINE: Unable to create ["+workout.getId()+","+
                             workout.getUser()+","+workout.getTrainer()+","+workout.getLevel()+","+
-                            workout.getStarting_day()+","+workout.getEnd_day()+"] on Neo4j\n";
-                    saveError(file, message);
+                            workout.getStarting_day()+","+workout.getEnd_day()+"]\n";
+                    saveError(log_neo4j, message);
                 }
                 else
                     System.err.println("Error! Unable to insert the routine\n");
@@ -289,8 +284,6 @@ public class TrainerManager extends UserManager{
 
     //function for insert an exercise in a new routine
     public Exercise insertExercise(String muscle, String type) throws IOException {
-        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-        Scanner sc = new Scanner(System.in);
         Exercise exercise;
         String fetch = null;
         Document ex;
@@ -301,9 +294,10 @@ public class TrainerManager extends UserManager{
             fetch = bufferRead.readLine();
             if(fetch.equals("r"))
                 return null;
-            exercise = new Exercise(mongoDb.searchExercises(fetch, false, muscle, type),true);
-            if(exercise!=null)
-                break;
+            exercise = selectExercise(mongoDb.searchExercises(fetch, false, muscle, type), false);
+            if(exercise==null)
+                continue;
+            break;
         }
         System.out.println(exercise.getName()+ " added\n");
 
@@ -321,13 +315,15 @@ public class TrainerManager extends UserManager{
         mongoDb.mostUsedEquipment(null);
         for(String s: Muscles)
             mongoDb.mostUsedEquipment(s);
+
+        System.out.println("\nPress any key to continue...");
+        sc.next();
     }
 
     public void mostVotedPresentExercises(){
-        Scanner sc = new Scanner(System.in);
         String s;
 
-        System.out.println("Insert the number of highest voted routine you want to consider and the number of exercises you want to show" +
+        System.out.println("Insert the number of routine you want to consider...\nand the number of exercises you want to show" +
                 "or press r to return...");
         s = sc.next();
         if(s.equals("r")) return;
@@ -337,6 +333,9 @@ public class TrainerManager extends UserManager{
         int max_ex = Integer.parseInt(s);
 
         mongoDb.mostVotedPresentExercises(max_vote, max_ex);
+
+        System.out.println("\nPress any key to continue...");
+        sc.next();
     }
 
     public boolean sessionTrainer() throws IOException {
@@ -359,7 +358,6 @@ public class TrainerManager extends UserManager{
                     "-----------------------------\n" +
                     "11) Log out\n" +
                     "0)  Exit the app");
-            Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
                 case "1":
@@ -394,10 +392,10 @@ public class TrainerManager extends UserManager{
                     break;
                 case "11":
                     running = false;
-                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
+                    System.out.println("Bye bye\n");
                     break;
                 case "0":
-                    System.out.println("Bye bye (￣(ｴ)￣)ﾉ");
+                    System.out.println("Bye bye\n");
                     return false;
                 default:
                     System.out.println("Please select an existing option!\n");
@@ -410,7 +408,6 @@ public class TrainerManager extends UserManager{
     public void showAvgAgeLvl(){
         String threshold;
 
-        Scanner sc = new Scanner(System.in);
         System.out.println("Insert the age you want to consider or press r to return...");
         while(true) {
             threshold = sc.next();
@@ -421,43 +418,41 @@ public class TrainerManager extends UserManager{
             else
                 break;
         }
-
         mongoDb.showAvgAgeLvl(Integer.toString(LocalDate.now().getYear()-Integer.parseInt(threshold)));
+        System.out.println("\nPress any key to continue...");
+        sc.next();
     }
 
-    public void showCreatedRoutines() {
-        String id = neo4j.showCreatedRoutines(self.getUser_id());
-        if(id != null)
-            mongoDb.showRoutineDetails(id);
+    public void showCreatedRoutines() throws IOException {
+        optionsRoutines(neo4j.showCreatedRoutines(self.getUser_id()));
     }
 
     public void showLvlUp(){
         String start, end;
         DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
-        Scanner sc = new Scanner(System.in);
         System.out.println("Insert the starting date...");
         start = sc.next();
         System.out.println("Insert the ending date...");
         end =sc.next();
 
 
-        System.out.println("The number of users that leveled up from " + start + " to " + end +":");
+        System.out.println("\nThe number of users that leveled up from " + start + " to " + end +":\n");
         System.out.printf("%22s %25s %25s", "Beginner->Intermediate", "Intermediate->Expert", "Beginner->Expert");
         System.out.println();
         neo4j.showLvlUpBI(start, end);
         neo4j.showLvlUpIE(start, end);
         neo4j.showLvlUpBE(start, end);
         System.out.println();
-        System.out.println();
+        System.out.println("\nPress any key to continue...");
+        sc.next();
     }
 
     public void showMostFidelityUsers() throws IOException {
         int num;
-        System.out.println("Insert the limit of the most fidelity user you want to see or press r to return...");
+        System.out.println("Insert the number of user you want to see or press r to return...");
 
         while(true) {
-            Scanner sc = new Scanner(System.in);
             String input = sc.next();
             if (input.equals("r"))
                 return;
@@ -468,8 +463,9 @@ public class TrainerManager extends UserManager{
                 break;
             }
         }
-        String ret = neo4j.showMostFidelityUsers(num);
-        optionsUser(ret);
+        optionsUsers(neo4j.showMostFidelityUsers(num), true, false);
+        System.out.println("Press any key to continue...");
+        sc.next();
     }
 
 }

@@ -2,6 +2,8 @@ package it.unipi.wefit.manager;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import it.unipi.wefit.entities.Exercise;
+import it.unipi.wefit.entities.Workout;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -37,7 +39,11 @@ public class UserManager {
     protected MongoDbConnector mongoDb;
     protected Neo4jConnector neo4j;
 
-    protected String file = "./error_log.txt";
+    Scanner sc = new Scanner(System.in);
+    BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+
+    protected String log_mongo = "./mongodb_log.txt";
+    protected String log_neo4j = "./neo4j_log.txt";
 
     public UserManager(User user, MongoDbConnector mongo){
         this.self = user;
@@ -47,31 +53,33 @@ public class UserManager {
 
     //function for comment a routine
     public void addComment(String routine_id) throws IOException {
-        Comment c = new Comment(null, null);
-        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         String input = null;
         System.out.println("Insert the comment you want to add or press r to return...");
         input = bufferRead.readLine();
         if(input.equals("r"))
             return;
-        c.setComment(input);
+        Comment c = new Comment(input, null);
         c.setUser(self.getUser_id());
 
         //management of the consistency among db
         if(mongoDb.insertComment(c, routine_id)) {  //mongo db correctly inserted
             if(!neo4j.insertComment(c.getUser(), routine_id)){ //neo4j not inserted
-                String message = "ERROR COMMENT: Unable to insert [" + c.getUser()+ "," + routine_id+"] on Neo4j\n";
-                saveError(file, message);
+                String message = "ERROR COMMENT: Unable to insert [" + c.getUser()+ "," + routine_id+"]\n";
+                saveError(log_neo4j, message);
             }
             System.out.println("Success! Your comment has been inserted\n");
+            System.out.println("Press any key to continue...");
+            sc.next();
         }
-        else //mongodb not inserted
+        else { //mongodb not inserted
             System.err.println("Unable to insert the comment!\n");
+            System.out.println("Press any key to continue...");
+            sc.next();
+        }
     }
 
     //function for vote a routine
     public void addVote(String routine_id){
-        Scanner sc = new Scanner(System.in);
         System.out.println("Please insert your vote (1-5) or press r to return...");
         String vote_string = insertNumber();
         int vote = Integer.parseInt(vote_string);
@@ -79,35 +87,38 @@ public class UserManager {
         //management of the consistency among db
         if(neo4j.insertVote(self.getUser_id(), routine_id, vote)) { //neo4j correctly inserted
             if(!mongoDb.insertVote(routine_id, vote)){ //mongodb not inserted
-                String message = "ERROR VOTE: Unable to insert [" + self.getUser_id()+","+routine_id+ "," + vote + "] on MongoDB\n";
-                saveError(file, message);
+                String message = "ERROR VOTE: Unable to insert [" + self.getUser_id()+","+routine_id+ "," + vote + "]\n";
+                saveError(log_mongo, message);
             }
             System.out.println("Success! Your vote has been inserted\n");
+            System.out.println("Press any key to continue...");
+            sc.next();
         }
-        else //neo4j not inserted
+        else { //neo4j not inserted
             System.err.println("Unable to insert the vote!\n");
+            System.out.println("Press any key to continue...");
+            sc.next();
+        }
     }
 
     //function for change profile's properties
     public void changeProfile() throws IOException {
         System.out.println("USER_ID: " + self.getUser_id());
-        System.out.println("1) Name: " + self.getName());
-        System.out.println("2) Gender: " + self.getGender());
-        System.out.println("3) Year of birth: " + self.getYear_of_birth());
-        System.out.println("4) Height: " + self.getHeight());
-        System.out.println("5) Weight: " + self.getWeight());
-        System.out.println("6) Training: " + self.getTrain());
-        System.out.println("7) Background: " + self.getBackground());
-        System.out.println("8) Experience: " + self.getExperience());
-        System.out.println("9) Email: " + self.getEmail());
-        System.out.println("10) Password: " + self.getPassword());
+        System.out.println("1)  Name: " + self.getName());
+        System.out.println("2)  Gender: " + self.getGender());
+        System.out.println("3)  Year of birth: " + self.getYear_of_birth());
+        System.out.println("4)  Height: " + self.getHeight());
+        System.out.println("5)  Weight: " + self.getWeight());
+        System.out.println("6)  Training: " + self.getTrain());
+        System.out.println("7)  Background: " + self.getBackground());
+        System.out.println("8)  Experience: " + self.getExperience());
+        System.out.println("9)  Email: " + self.getEmail());
+        System.out.println("10) Password: *******");
         System.out.println("0) Save your changes\n");
         System.out.println("Select an option or press \'r\' to return...");
-        Scanner sc = new Scanner(System.in);
         String input;
         User new_user = new User(self.toDocument());
         while(true) {
-            BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
             input = sc.next();
             switch (input) {
                 case "1": {
@@ -175,7 +186,7 @@ public class UserManager {
                 }
                 case "10": {
                     System.out.println("Insert your new password...");
-                    input = sc.next();
+                    input = new DigestUtils("SHA3-256").digestAsHex(sc.next());
                     new_user.setPassword(input);
                     System.out.println("\nSelect another option or press 0 to save your changes\n(or press r to return)");
                     break;
@@ -187,8 +198,8 @@ public class UserManager {
                         if(!neo4j.changeProfile(new_user)){ //neo4j not inserted
                             String message = "ERROR USER: Unable to modify ["+self.getUser_id()+","+ self.getName()+","+
                                     self.getGender()+","+ self.getYear_of_birth()+","+
-                                    self.getLevel()+","+self.getTrainer()+"] on Neo4j\n";
-                            saveError(file, message);
+                                    self.getLevel()+","+self.getTrainer()+"]\n";
+                            saveError(log_neo4j, message);
                         }
                         System.out.println("Success! The profile has been updated\n");
 
@@ -198,25 +209,31 @@ public class UserManager {
                 }
                 case "r":
                     return;
+                default:
+                    System.out.println("Please select an existing option!");
             }
         }
     }
 
-    public void deleteComment(String comment, String routine){
+    public void deleteComment(String comment, String routine) {
         if(mongoDb.deleteComment(comment, routine)) {
             if(!neo4j.deleteComment(self.getUser_id(), routine)){
-                String message = "ERROR COMMENT: Unable to delete [" + self.getUser_id()+ "," + routine+"] on Neo4j\n";
-                saveError(file, message);
+                String message = "ERROR COMMENT: Unable to delete [" + self.getUser_id()+ "," + routine+"]\n";
+                saveError(log_neo4j, message);
             }
             System.out.println("Comment correctly deleted!\n");
+            System.out.println("Press any key to continue...");
+            sc.next();
         }
-        else
+        else {
             System.err.println("Unable to delete the comment!\n");
+            System.out.println("Press any key to continue...");
+            sc.next();
+        }
     }
 
     //function for insert a number (it asks until read is correct)
     public String insertNumber(){
-        Scanner sc = new Scanner(System.in);
         String input;
         while(true) {
             input = sc.next();
@@ -234,14 +251,12 @@ public class UserManager {
         System.out.println("2) Trainer");
         System.out.println("3) Level");
         System.out.println("4) Vote");
-        System.out.println("5) Data");
+        System.out.println("5) Date");
         System.out.println("0) Search routine(s)\n");
         System.out.println("Select an option or press \'r\' to return...");
-        Scanner sc = new Scanner(System.in);
         ArrayList<Bson> filters = new ArrayList<>();
         String input;
         while(true) {
-            BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
             input = sc.next();
             switch (input) {
                 case "1": {
@@ -324,15 +339,10 @@ public class UserManager {
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
-                case "0":
-                    String option = mongoDb.searchRoutines(filters);
-                    if(option==null)
-                        return;
-                    else if(option.startsWith("c:"))
-                        addComment(option.substring(2));
-                    else if(option.startsWith("v:"))
-                        addVote(option.substring(2));
-                    return;
+                case "0": {
+                    ArrayList<Workout> works = mongoDb.searchRoutines(filters);
+                    optionsRoutines(works);
+                }
                 case "r":
                     return;
                 default:
@@ -354,11 +364,9 @@ public class UserManager {
         System.out.println("8) See reccomended users");
         System.out.println("0) Search user(s)\n");
         System.out.println("Select an option or press \'r\' to return...");
-        Scanner sc = new Scanner(System.in);
         ArrayList<Bson> filters = new ArrayList<>();
         String input;
         while(true) {
-            BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
             input = sc.next();
             switch (input) {
                 case "1": {
@@ -465,19 +473,14 @@ public class UserManager {
                     System.out.println("\nInsert another filter or press 0 to search\n(or press r to return)");
                     break;
                 }
-                case "8":
-                    String r = neo4j.showRecommended(self.getUser_id());
-                    optionsUser(r);
+                case "8": {
+                    optionsUsers(neo4j.showRecommended(self.getUser_id()), true, true);
                     return;
-                case "0":
-                    String ret = mongoDb.searchUsers(filters);
-                    if(ret==null)
-                        return;
-                    else if(ret.startsWith("u:")) // the user want to see details of one user
-                        neo4j.unfollowUser(self.getUser_id(), ret.substring(2));
-                    else if(ret.startsWith("f:"))
-                        neo4j.followUser(self.getUser_id(), ret.substring(2));
+                }
+                case "0": {
+                    optionsUsers(mongoDb.searchUsers(filters), false, true);
                     return;
+                }
                 case "r":
                     return;
                 default:
@@ -488,7 +491,6 @@ public class UserManager {
 
     public void mostFollowedUsers() throws IOException {
         String input;
-        Scanner sc = new Scanner(System.in);
         System.out.println("Insert the value of n or press r to return");
         while(true){
             input = sc.next();
@@ -499,13 +501,11 @@ public class UserManager {
             else
                 break;
         }
-        String ret = neo4j.mostFollowedUsers(Integer.parseInt(input));
-        optionsUser(ret);
+        optionsUsers(neo4j.mostFollowedUsers(Integer.parseInt(input)), true, false);
     }
 
     public void mostRatedTrainers() throws IOException {
         String input;
-        Scanner sc = new Scanner(System.in);
         System.out.println("Insert the value of n or press r to return");
         while(true){
             input = sc.next();
@@ -516,49 +516,183 @@ public class UserManager {
             else
                 break;
         }
-        String ret = neo4j.mostRatedTrainers(Integer.parseInt(input));
-        optionsUser(ret);
+        optionsUsers(neo4j.mostRatedTrainers(Integer.parseInt(input)), true, false);
     }
 
-    public void optionsUser(String option) throws IOException {
-        if(option==null)
-            return;
-        if(option.startsWith("r:")) { //the user want to see routine details of one of followed users
-            String ret = mongoDb.showRoutineDetails(option.substring(2));
-            if(ret==null)
-                return;
-            else if(ret.startsWith("c:"))
-                addComment(option.substring(2));
-            else if(ret.startsWith("v:"))
-                addVote(option.substring(2));
-        }
-
-        else if(option.startsWith("d:")){ // the user want to see details of one user
-            String ret = mongoDb.showUserDetails(option.substring(2)); //if the return is not null the user want to follow/unfollow antoher user
-            if(ret==null)
-                return;
-            else if(ret.startsWith("u:")) {
-                neo4j.unfollowUser(self.getUser_id(), option.substring(2));
+    public String optionsRoutine(Workout w) throws IOException {
+        System.out.println("\n" +"Press 0 to return to main menu\n" +
+                "Press 1 to search an exercise\n"+
+                "Press 2 to comment the routine\n"+
+                "Press 3 to vote the routine\n"+
+                "Press 4 to see routine's comments\n"+
+                "Or press another key to continue");
+        String input = sc.next();
+        switch (input) {
+            case "0":
+                return "0";
+            case "1": {
+                System.out.println("Insert the exercise name");
+                String exercise="";
+                try {
+                    exercise = bufferRead.readLine();
+                } catch (IOException e) { e.printStackTrace();}
+                selectExercise(mongoDb.searchExercises(exercise, true,null, null), true);
+                return "";
             }
-            else if(ret.startsWith("f:")) {
-                neo4j.followUser(self.getUser_id(), option.substring(2));
-            }
+            case "2":
+                addComment(w.getId());
+                return "";
+            case "3":
+                addVote(w.getId());
+                return "";
+            case "4":
+                ArrayList<Comment> comms = mongoDb.showComments(w.getId());
+                if(comms.size()==0)
+                    return "";
+                PrintManager.printComments(comms,10);
+                Comment c = selectComment(comms);
+                if(c==null)
+                    return "";
+                else
+                    deleteComment(c.getId(), w.getId());
+                return "";
+            default: return "c";
         }
-        else if(option.startsWith("f:")) //follow user without see details
-            neo4j.followUser(self.getUser_id(), option.substring(2));
-        else if(option.startsWith("u:")) //unfollow user without see details
-            neo4j.unfollowUser(self.getUser_id(), option.substring(2));
     }
 
-    public void optionsRoutine(String option, String routine) throws IOException {
-        if(option==null)
-            return;
-        else if(option.startsWith("c:"))
-            addComment(routine);
-        else if(option.startsWith("v:"))
-            addVote(routine);
-        else if(option.startsWith("d:"))
-            deleteComment(option.substring(2), routine);
+    public void optionsRoutines(ArrayList<Workout> works) throws IOException {
+        while (true) {
+            PrintManager.printRoutines(works, 10);
+            Workout w = selectRoutine(works);
+            if (w == null)
+                return;
+            while (true) {
+                w.printDetails();
+                String ret = optionsRoutine(w);
+                switch (ret) {
+                    case "0": //return to the main menu
+                        return;
+                    case "c": //return to the list of routines
+                        break;
+                    default: //continue..
+                        w = new Workout(mongoDb.getRoutine(w.getId())); //search again the workout (the vote can be changed)
+                        continue;
+                }
+                break;
+            }
+        }
+    }
+
+    public String optionsUser(User u, boolean b) throws IOException {
+        String id = u.getUser_id();
+        String trainer = u.getTrainer();
+        System.out.println("Press 0 to return to main menu\n" +
+                "Press 1 to see user's details\n"+
+                "press 2 to see user's routines\n"+
+                "press 3 to follow the user\n"+
+                "press 4 to unfollow the user");
+
+        String input = sc.next();
+        switch (input){
+            case "0":
+                return "0";
+            case "1":
+                while(true) {
+                    if(b)
+                        u = new User(mongoDb.getUser(u.getUser_id()));
+                    u.printDetails();
+                    System.out.println("\n" +"Press 0 to return to main menu\n" +
+                            "Press 1 to FOLLOW the user\n"+
+                            "Press 2 to UNFOLLOW the user\n" +
+                            "Or press another key to continue");
+
+                    input = sc.next();
+                    switch (input) {
+                        case "0":
+                            return "0";
+                        case "1":
+                            if(neo4j.followUser(self.getUser_id(), id.replace("\"","")))  //follow user
+                                System.out.println(u.getName() + " successfully follow");
+                            else
+                                System.err.println("Unable to follow "+ u.getName());
+                            System.out.println("Press any key to continue...");
+                            sc.next();
+                            break;
+                        case "2":
+                            if(neo4j.unfollowUser(self.getUser_id(), id.replace("\"",""))) //unfollow user
+                                System.out.println(u.getName() + " successfully unfollow");
+                            else
+                                System.err.println("Unable to unfollow "+ u.getName());
+                            System.out.println("Press any key to continue...");
+                            sc.next();
+                            break;
+                        default: return "c";
+                    }
+                }
+            case "2": {
+                if (trainer.equals("yes")){ //the user is a trainer
+                    System.out.println("Press 1 to see own routines\n"+
+                            "or press 2 to see routine's created");
+
+                    input = sc.next();
+                    String routine=null;
+                    switch (input){
+                        case "1": //se own routines
+                            optionsRoutines(neo4j.showRoutines(id.replace("\"", ""), "all"));
+                            break;
+                        case "2": //see created routines
+                            optionsRoutines(neo4j.showCreatedRoutines(id.replace("\"", "")));
+                            break;
+                    }
+                    break;
+                }
+                else { // the user is not a trainer, see his routines
+                    optionsRoutines(neo4j.showRoutines(id.replace("\"", ""), "all"));
+                    break;
+                }
+            }
+            case "3":
+                if(neo4j.followUser(self.getUser_id(), id.replace("\"","")))  //follow user
+                    System.out.println(u.getName() + " successfully follow");
+                else
+                    System.err.println("Unable to follow "+ u.getName());
+                System.out.println("Press any key to continue...");
+                sc.next();
+                break;
+            case "4":
+                if(neo4j.unfollowUser(self.getUser_id(), id.replace("\"",""))) //unfollow user
+                    System.out.println(u.getName() + " successfully unfollow");
+                else
+                    System.err.println("Unable to unfollow "+ u.getName());
+                System.out.println("Press any key to continue...");
+                sc.next();
+                break;
+            default:
+                return "c";
+        }
+        return "c";
+    }
+
+    public void optionsUsers(ArrayList<User> users, boolean b, boolean print) throws IOException {
+        while (true) {
+            if(print)
+                PrintManager.printUsers(users, 10);
+            User u = selectUser(users);
+            if (u == null)
+                return;
+            while (true) {
+                String ret = optionsUser(u, b);
+                switch (ret) {
+                    case "0": //return to the main menu
+                        return;
+                    case "c": //return to the list of users
+                        break;
+                    default: //continue..
+                        continue;
+                }
+                break;
+            }
+        }
     }
 
     public void saveError(String file, String message){
@@ -566,6 +700,115 @@ public class UserManager {
             Files.write(Paths.get(file), message.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             System.out.println("Unable to save error on file\n");
+        }
+    }
+
+    //function to select a routine from given routines
+    public Comment selectComment(ArrayList<Comment> comms){
+        String input;
+        while (true) {
+            System.out.println("If you want to delete your comment press the number of the comment\n" +
+                    "Press 0 to continue");
+
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > comms.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return null;
+            default: {
+                if(!self.getUser_id().equals(comms.get(Integer.parseInt(input) - 1).getUser())) {
+                    System.out.println("You can't delete this comment!\n");
+                    System.out.println("Press any key to continue..");
+                    sc.next();
+                    return null;
+                }
+                else
+                    return comms.get(Integer.parseInt(input) - 1);
+            }
+        }
+    }
+
+    //function to select an exercise from given exercises
+    public Exercise selectExercise(ArrayList<Exercise> exs, boolean print){
+        PrintManager.printExercises(exs, 10);
+        String input;
+        while (true) {
+            System.out.println("\nPress the number of the exercise you want to select\n" +
+                    "or press 0 to return");
+
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > exs.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return null;
+            default:
+                if(print==true) {
+                    exs.get(Integer.parseInt(input)-1).printDetails();
+
+                    System.out.println("\nPress any key to return");
+                    sc.next();
+                }
+                return exs.get(Integer.parseInt(input)-1);
+        }
+    }
+
+    //function to select a routine from given routines
+    public Workout selectRoutine(ArrayList<Workout> works){
+        String input;
+        while (true) {
+            System.out.println("Press the number of the routine you want to select\n" +
+                    "or press 0 to return");
+
+            input = sc.next();
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > works.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return null;
+            default:
+                return new Workout(mongoDb.getRoutine(works.get(Integer.parseInt(input)-1).getId()));
+        }
+    }
+
+    //function to select a user from given users
+    public User selectUser(ArrayList<User> us) {
+        String input;
+        while (true) {
+            System.out.println("Press the number of the user you want to select\n" +
+                    "or press 0 to return to the main menu");
+
+            input = sc.next();
+            if(input.equals("r"))
+                return null;
+            if (!input.matches("[0-9.]+"))
+                System.out.println("Please select an existing option!");
+            else if ((Integer.parseInt(input)) > us.size())
+                System.out.println("Please select an existing option!\n");
+            else
+                break;
+        }
+        switch (input) {
+            case "0":
+                return null;
+            default:
+                return us.get(Integer.parseInt(input)-1);
         }
     }
 
@@ -587,7 +830,6 @@ public class UserManager {
                     "10) Modify your profile\n" +
                     "11) Log out\n" +
                     "0)  Exit");
-            Scanner sc = new Scanner(System.in);
             String input = sc.next();
             switch (input) {
                 case "1":
@@ -622,8 +864,10 @@ public class UserManager {
                     break;
                 case "11":
                     running = false;
+                    System.out.println("Bye bye\n");
                     break;
                 case "0":
+                    System.out.println("Bye bye\n");
                     return false;
                 default:
                     System.out.println("Please select an existing option!\n");
@@ -635,9 +879,7 @@ public class UserManager {
 
     //function for signup to the app
     public boolean signUp() throws IOException {
-        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
         String name, gender, yob, height, weight, training, bg, exp, email, password, level;
-        Scanner sc = new Scanner(System.in);
         System.out.println("Your are signing-up as a new user, please insert your credentials\n" +
                 "If you want to return press r\n");
 
@@ -678,16 +920,17 @@ public class UserManager {
         if(email.equals("r"))
             return true;
         System.out.println("Choose a password...");
-        password = new DigestUtils("SHA3-256").digestAsHex(sc.next());
+        password = sc.next();
         if(password.equals("r"))
             return true;
+        password = new DigestUtils("SHA3-256").digestAsHex(password);
         int user = mongoDb.lastUser();
         self = new User(name, gender, yob, height, weight, training, bg, exp, email, password, level, "no", Integer.toString(user));
 
         //management of the consistency among db
         if(mongoDb.insertUser(self)){ //mongodb correctly inserted
             if(neo4j.insertUser(self)) //neo4j correctly inserted
-                System.out.println("\nNice, from now on your are a member of the it.unipi.wefit.community,\n" +
+                System.out.println("\nNice, from now on your are a member of the WeFit community,\n" +
                         "soon one of our trainer will contact you to assign a training level\n" +
                         "and build a personal routine with you!\n" +
                         "We hope your stay here will be a pleasurable one!\n");
@@ -695,8 +938,8 @@ public class UserManager {
                 if(!mongoDb.deleteUser(self)){
                     String message = "ERROR USER: Unable to create ["+self.getUser_id()+","+ self.getName()+","+
                             self.getGender()+","+ self.getYear_of_birth()+","+
-                            self.getLevel()+","+self.getTrainer()+"] on Neo4j\n";
-                    saveError(file, message);
+                            self.getLevel()+","+self.getTrainer()+"]\n";
+                    saveError(log_neo4j, message);
                 }
                 else {
                     System.err.println("Error! Unable to signUp\n");
@@ -716,38 +959,23 @@ public class UserManager {
 
     //show routines commented by the logged user
     public void showCommentedRoutines() throws IOException {
-        String routine = neo4j.showCommentedRoutines(self.getUser_id());
-        if(routine!=null) {
-            String option = mongoDb.showRoutineDetails(routine);
-            optionsRoutine(option, routine);
-        }
+        optionsRoutines(neo4j.showCommentedRoutines(self.getUser_id()));
     }
 
     public void showCurrentRoutine() throws IOException {
-        String routine = neo4j.showRoutines(self.getUser_id(), "current");
-        if(routine!=null) {
-            String option = mongoDb.showRoutineDetails(routine);
-            optionsRoutine(option, routine);
-        }
+        optionsRoutines(neo4j.showRoutines(self.getUser_id(), "current"));
     }
 
     public void showFollowedUsers() throws IOException {
-        String ret = neo4j.showFollowUsers(self.getUser_id(), "followed");
-        optionsUser(ret);
+        optionsUsers(neo4j.showFollowUsers(self.getUser_id(), "followed"), true, true);
     }
 
     public void showFollowers() throws IOException {
-        String ret = neo4j.showFollowUsers(self.getUser_id(), "followers");
-        optionsUser(ret);
+        optionsUsers(neo4j.showFollowUsers(self.getUser_id(), "followers"), true, true);
     }
 
     public void showPastRoutines() throws IOException {
-        //mongoDb.showPastRoutines(self.getString("user_id"));}
-        String routine = neo4j.showRoutines(self.getUser_id(), "past");
-        if(routine!=null) {
-            String option = mongoDb.showRoutineDetails(routine);
-            optionsRoutine(option, routine);
-        }
+        optionsRoutines(neo4j.showRoutines(self.getUser_id(), "past"));
     }
 
 }

@@ -76,8 +76,12 @@ public class Exercise {
         if(routine){ if(doc.getInteger("weight") != null){ weight = doc.getInteger("weight"); } return;}
         level = doc.getString("level");
         ArrayList<Document> images = (ArrayList<Document>) doc.get("images");
-        image1 = images.get(0).getString("image");
-        image2 = images.get(1).getString("image");
+        if(images.size()==2) {
+            image1 = images.get(0).getString("image");
+            image2 = images.get(1).getString("image");
+        }
+        else if(images.size()==1)
+            image1 = images.get(0).getString("image");
         details = doc.getString("details");
     }
 
@@ -90,16 +94,20 @@ public class Exercise {
         System.out.print("Level: " + level+"\n");
         System.out.print("Muscle targeted: " + muscle_targeted+"\t");
         System.out.print("Equipment: " + equipment+"\n");
-        System.out.print("Images:\n");
-        System.out.print(image1+"\n");
-        System.out.print(image2+"\n");
+
+        if(image1!=null) {
+            System.out.print("Images:\n");
+            System.out.print(image1 + "\n");
+        }
+        if(image2!=null)
+            System.out.print(image2+"\n");
 
         if(details!=null)
             System.out.println("Details:\n" + details+"\n");
     }
 
     public void print(){
-        System.out.printf("%50s %20s %15s %15s", name,muscle_targeted,
+        System.out.printf("%60s %20s %15s %15s", name,muscle_targeted,
                 equipment,type);
         System.out.println();
     }
