@@ -1,12 +1,8 @@
 package it.unipi.wefit.entities;
 
-import com.sun.source.tree.BinaryTree;
 import lombok.*;
 import org.bson.Document;
 import org.bson.types.ObjectId;
-import org.neo4j.driver.internal.shaded.io.netty.util.internal.StringUtil;
-
-import javax.print.Doc;
 import java.util.ArrayList;
 
 @Getter
@@ -179,24 +175,24 @@ public class Workout {
         System.out.println("Average vote: " + vote+"\n\n");
 
         System.out.print("WARM UP:\n");
-        System.out.printf("%50s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
-        System.out.println("------------------------------------------------------------------------------------------------------------");
+        System.out.printf("%60s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------------------------------");
         for(Exercise ex : warm_up)
-            ex.print();
+            ex.print(false);
         System.out.println();
 
         System.out.print("EXERCISES:\tRepeat the sequence "+repeat+" times\n");
-        System.out.printf("%50s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
-        System.out.println("------------------------------------------------------------------------------------------------------------");
+        System.out.printf("%60s %20s %15s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type", "Weight\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------------------------------");
         for(Exercise ex : exercises)
-            ex.print();
+            ex.print(true);
         System.out.println();
 
         System.out.print("STRETCHING:\n");
-        System.out.printf("%50s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
-        System.out.println("------------------------------------------------------------------------------------------------------------");
+        System.out.printf("%60s %20s %15s %15s", "Name", "Muscle Targeted", "Equipment", "Type\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------------------------------");
         for(Exercise ex : stretching)
-            ex.print();
+            ex.print(false);
         System.out.println();
     }
 

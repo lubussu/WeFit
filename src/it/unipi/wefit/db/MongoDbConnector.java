@@ -1,11 +1,9 @@
 package it.unipi.wefit.db;
+
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoException;
-import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Accumulators;
-import com.mongodb.client.model.DeleteOneModel;
-import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
@@ -29,26 +27,16 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import it.unipi.wefit.entities.*;
 
-import javax.print.Doc;
-
-import static com.mongodb.client.model.Projections.*;
-import java.io.*;
 
 public class MongoDbConnector {
-    private ConnectionString uri;
-    private MongoClient myClient;
-    private MongoDatabase db;
-
-    private MongoCollection<Document> workout;
-    private MongoCollection<Document> users;
-    private MongoCollection<Document> exercises;
-
-    private User user;
+    private final MongoCollection<Document> workout;
+    private final MongoCollection<Document> users;
+    private final MongoCollection<Document> exercises;
 
     public MongoDbConnector(String conn, String db_name){
-        uri = new ConnectionString(conn);
-        myClient = MongoClients.create(uri);
-        db = myClient.getDatabase(db_name);
+        ConnectionString uri = new ConnectionString(conn);
+        MongoClient myClient = MongoClients.create(uri);
+        MongoDatabase db = myClient.getDatabase(db_name);
 
         workout = db.getCollection("workout");
         users = db.getCollection("users");
@@ -95,35 +83,25 @@ public class MongoDbConnector {
 
     public Bson getFilter(String field, String value, String option){
 
-        switch(option){
-            case "eq":
-                return (match(regex(field, ".*"+value+".*", "i")));
-            case "lt":
-                return (match(lt(field,value)));
-            case "lte":
-                return (match(lte(field,value)));
-            case "gt":
-                return (match(gt(field,value)));
-            case "gte":
-                return (match(gte(field,value)));
-        }
-        return null;
+        return switch (option) {
+            case "eq" -> (match(regex(field, ".*" + value + ".*", "i")));
+            case "lt" -> (match(lt(field, value)));
+            case "lte" -> (match(lte(field, value)));
+            case "gt" -> (match(gt(field, value)));
+            case "gte" -> (match(gte(field, value)));
+            default -> null;
+        };
     }
 
     public Bson getFilter(String field, int value, String option){
-        switch(option){
-            case "eq":
-                return (match(eq(field,value)));
-            case "lt":
-                return (match(lt(field,value)));
-            case "lte":
-                return (match(lte(field,value)));
-            case "gt":
-                return (match(gt(field,value)));
-            case "gte":
-                return (match(gte(field,value)));
-        }
-        return null;
+        return switch (option) {
+            case "eq" -> (match(eq(field, value)));
+            case "lt" -> (match(lt(field, value)));
+            case "lte" -> (match(lte(field, value)));
+            case "gt" -> (match(gt(field, value)));
+            case "gte" -> (match(gte(field, value)));
+            default -> null;
+        };
     }
 
     //function to get a user by the name
@@ -180,7 +158,7 @@ public class MongoDbConnector {
     //function to insert a new exercise in the db
     public void insertNewExercise(Exercise exercise){
         try {
-            InsertOneResult result = exercises.insertOne(exercise.toDocument());
+            exercises.insertOne(exercise.toDocument());
             System.out.println("Success! Your new exercise has been inserted.");
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
@@ -191,11 +169,12 @@ public class MongoDbConnector {
     public String insertRoutine(Workout routine){
         try {
             InsertOneResult result = workout.insertOne(routine.toDocument());
-            return result.getInsertedId().asObjectId().getValue().toString();
-
+            if(result.getInsertedId() != null)
+                return result.getInsertedId().asObjectId().getValue().toString();
         } catch (MongoException me) {
             return null;
         }
+        return null;
     }
 
     //function for signUp in the app (insert new user in the db)
@@ -203,7 +182,7 @@ public class MongoDbConnector {
         Document user = us.toDocument();
         try {
             InsertOneResult result = users.insertOne(user);
-            return (result!=null);
+            return (result.getInsertedId() != null);
         } catch (MongoException me) {
             return false;
         }
@@ -214,11 +193,13 @@ public class MongoDbConnector {
         double score;
         int nVotes;
         Document routine = workout.find(eq("_id", new ObjectId(routine_id))).first();
+        if(routine==null)
+            return false;
 
         score = routine.getDouble("vote");
         nVotes = routine.getInteger("num_votes");
 
-        BigDecimal bd = new BigDecimal(((score*nVotes)+vote)/(nVotes+1)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal bd = BigDecimal.valueOf(((score * nVotes) + vote) / (nVotes + 1)).setScale(2, RoundingMode.HALF_UP);
         nVotes = nVotes+1;
         score = bd.doubleValue();
 
@@ -231,12 +212,16 @@ public class MongoDbConnector {
 
     //function to get the user_id of the last user (to insert a new user)
     public int lastUser(){
-        int last_user =  users.find(ne("last_user", null)).first().getInteger("last_user");
+        Document user =  users.find(ne("last_user", null)).first();
+        if(user==null)
+            return -1;
+        int last_user = user.getInteger("last_user");
         last_user ++;
         users.updateOne(ne("last_user", null), set("last_user", last_user));
         return last_user;
     }
 
+    //function that find the most used equipment in general or for the selected muscle group
     public void mostUsedEquipment(String muscle){
 
         ArrayList<Bson> filters = new ArrayList<>();
@@ -255,11 +240,16 @@ public class MongoDbConnector {
         filters.add(sort);  filters.add(limit);
 
         Document aggregation = workout.aggregate(filters).first();
+        if(aggregation == null) {
+            System.out.println("Result not found");
+            return;
+        }
 
         System.out.printf("%15s %15s %10s", muscle, aggregation.getString("_id"), aggregation.getInteger("count").toString());
         System.out.println("\n");
     }
 
+    //function for show the most present exercise in the top-n rated routines
     public void mostVotedPresentExercises(int max_vote, int max_ex){
 
         Bson order_vote = sort(descending("vote"));
@@ -284,7 +274,7 @@ public class MongoDbConnector {
     }
 
     //function for search exercise(s) using the given filters
-    public ArrayList<Exercise> searchExercises(String ex, boolean print, String muscle, String type){
+    public ArrayList<Exercise> searchExercises(String ex, String muscle, String type){
         ArrayList<Bson> filters = new ArrayList<>();
         filters.add(match(regex("name", ".*"+ex+".*", "i")));
 
@@ -341,16 +331,12 @@ public class MongoDbConnector {
         return us;
     }
 
-    public void setUser(User u){
-        user = u;
-    }
-
     //function for signIn in the app (search credentials in the db)
     public Document signIn(String username, String password) {
-        Document doc = users.find(and(eq("email",username),eq("password",password))).first();
-        return doc;
+        return users.find(and(eq("email",username),eq("password",password))).first();
     }
 
+    //function to show the average age per level
     public void showAvgAgeLvl(String threshold){
         Bson match = match(and(eq("trainer","no"),gte("year_of_birth", threshold)));
         Bson group = group("$level", sum("count", 1));
@@ -387,9 +373,15 @@ public class MongoDbConnector {
         });
     }
 
+    //functio to return an ArrayList<Comment> of the given routine
     public ArrayList<Comment> showComments(String routine){
-        ArrayList<Document> comments = (ArrayList<Document>) workout.find(eq("_id", new ObjectId(routine))).first().get("comments");
+        Document r = workout.find(eq("_id", new ObjectId(routine))).first();
         ArrayList<Comment> comms = new ArrayList<>();
+        ArrayList<Document> comments;
+        if(r == null)
+            return comms;
+        comments = (ArrayList<Document>) r.get("comments");
+
         System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
         if(comments == null || comments.size()==0){
             System.out.println("The routine has not any comment yet\nPress any key to continue..");
@@ -401,17 +393,4 @@ public class MongoDbConnector {
             comms.add(new Comment(d));
         return comms;
     }
-
-    //function for print all information of the given exercise
-    public Document showExercisesDetails(Document doc){
-        Exercise e = new Exercise(doc, false);
-        e.printDetails();
-        //ex.printDetails();
-
-        System.out.println("\nPress any key to return");
-        Scanner sc = new Scanner(System.in);
-        sc.next();
-        return doc;
-    }
-
 }

@@ -1,43 +1,22 @@
 package it.unipi.wefit.db;
 
-import com.mongodb.ConnectionString;
-import com.mongodb.MongoException;
-import com.mongodb.client.*;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.InsertOneResult;
-import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.bson.types.ObjectId;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.internal.InternalPath;
 import it.unipi.wefit.entities.*;
 import org.neo4j.driver.summary.ResultSummary;
 
-import javax.naming.ServiceUnavailableException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
-import java.util.concurrent.ThreadLocalRandom;
-
-import static com.mongodb.client.model.Aggregates.*;
-import static com.mongodb.client.model.Filters.*;
-import static com.mongodb.client.model.Projections.*;
-import static com.mongodb.client.model.Updates.push;
 import static org.neo4j.driver.Values.parameters;
 
 public class Neo4jConnector {
-    private Driver graph_driver;
+    private final Driver graph_driver;
 
     public Neo4jConnector(String conn, String username, String password){
-            graph_driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "wefit" ) );
+            graph_driver = GraphDatabase.driver( conn, AuthTokens.basic( username, password ) );
     }
 
     //function for change profile's properties in the db
@@ -83,7 +62,7 @@ public class Neo4jConnector {
     public ArrayList<Workout> showCommentedRoutines(String user) {
         ArrayList<Record> routines;
         try ( Session session = graph_driver.session() ) {
-            routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
+            routines = (ArrayList<Record>) session.readTransaction(tx-> {
                 List<Record> records;
 
                 records = tx.run("MATCH (:User {user_id: $user}) -[r:COMMENT]->(b:Routine) RETURN b AS routine",
@@ -93,7 +72,7 @@ public class Neo4jConnector {
                     System.out.println("You have not commented any routine yet...\n");}
                 return records;
             });
-        };
+        }
         return returnRoutines(routines);
     }
 
@@ -112,10 +91,11 @@ public class Neo4jConnector {
                     System.out.println("You have not created any routine yet...\n");}
                 return (ArrayList<Record>) records;
             });
-        };
+        }
         return returnRoutines(routines);
     }
 
+    //function fot comment a routine (add a relation on the db or if present increment the field num)
     public boolean insertComment(String user, String routine){
         try ( Session session = graph_driver.session() ) {
             ResultSummary rs = session.run("MATCH (a:User) MATCH (b:Routine) " +
@@ -168,6 +148,7 @@ public class Neo4jConnector {
         }
     }
 
+    //function to return an ArrayList of the most num followed users
     public ArrayList<User> mostFollowedUsers(int num){
         String query = "MATCH ()-[f:FOLLOW]->(u:User) "+
                 "WITH u, COUNT(f) AS num_followers "+
@@ -189,10 +170,11 @@ public class Neo4jConnector {
                         r.get("num_followers").toString());
                 System.out.println("\n");
             }
-        };
+        }
         return returnUsers(users);
     }
 
+    //function to return an ArrayList of the most num rated trainers
     public ArrayList<User> mostRatedTrainers(int num){
         String query = "MATCH ()-[v:VOTE]->(r:Routine)<-[:CREATE_ROUTINE]-(u:User) "+
                 "WITH u, AVG(toInteger(v.vote)) AS avg_vote "+
@@ -210,42 +192,18 @@ public class Neo4jConnector {
             System.out.println("--------------------------------------------------------------------------------------------------------");
             for(int i=0; i<trainers.size(); i++) {
                 Record r = trainers.get(i);
-                Double vote = Double.parseDouble(r.get("avg_vote").toString());
+                double vote = Double.parseDouble(r.get("avg_vote").toString());
                 BigDecimal bd = new BigDecimal(vote).setScale(3, RoundingMode.HALF_UP);
                 vote = bd.doubleValue();
                 System.out.printf("%5s %10s %20s %10s %10s", (i+1)+") ", r.get("user").get("user_id").toString().replace("\"",""), r.get("user").get("name").toString().replace("\"",""),
-                        r.get("user").get("gender").toString().replace("\"",""), vote.toString());
+                        r.get("user").get("gender").toString().replace("\"",""), vote);
                 System.out.println("\n");
             }
-        };
+        }
         return returnUsers(trainers);
     }
 
-    //function for print summary information of the given routines
-    public void printRoutines(ArrayList<Record> rec, int num){
-        int cycle = 0;
-        System.out.printf("%5s %10s %15s %15s %15s %15s", "     ", "Trainer", "Level", "Starting day", "End day","Vote\n");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
-        for(int i=0; i<rec.size(); i++) {
-            Record r = rec.get(i);
-            System.out.printf("%5s", (i+1)+") ");
-            Workout w = new Workout(null, null, r.get("routine").get("trainer").toString().replace("\"",""),
-                    r.get("routine").get("level").toString().replace("\"",""),
-                    -1, -1, -1, null, null, null,
-                    r.get("routine").get("starting_day").toString().replace("\"",""),
-                    r.get("routine").get("end_day").toString().replace("\"",""), null, -1,
-                    Double.parseDouble(r.get("routine").get("vote").toString().replace("\"","")));
-            w.print();
-            cycle++;
-            if(cycle == num){
-                System.out.println("Insert m to see more or another key to continue...");
-                Scanner sc = new Scanner(System.in);
-                if(sc.next().equals("m")) cycle = 0;
-                else return;
-            }
-        }
-    }
-
+    //function to return an ArrayList<Routine> from a ArrayList<Document>
     public ArrayList<Workout> returnRoutines(ArrayList<Record> routines){
         ArrayList<Workout> works = new ArrayList<>();
         for(Record r: routines){
@@ -262,6 +220,7 @@ public class Neo4jConnector {
         return works;
     }
 
+    //function to return an ArrayList<User> from a ArrayList<Document>
     public ArrayList<User> returnUsers(ArrayList<Record> users){
         ArrayList<User> us = new ArrayList<>();
         for(Record r: users){
@@ -283,17 +242,18 @@ public class Neo4jConnector {
             query="MATCH (a:User)-[:FOLLOW]->(b:User) WHERE a.user_id = $user RETURN b AS user";
         else
             query="MATCH (a:User)-[:FOLLOW]->(b:User) WHERE b.user_id = $user RETURN a AS user";
-        ArrayList<Record> users = new ArrayList<>();
+        ArrayList<Record> users;
         try ( Session session = graph_driver.session() ) {
             users = (ArrayList<Record>) session.readTransaction(tx -> {
                 List<Record> persons;
                 persons = tx.run(query, parameters("user", user)).list();
                 return persons;
             });
-        };
+        }
         return returnUsers(users);
     }
 
+    //function to get suggested users for the given user
     public ArrayList<User> showRecommended(String id) {
         ArrayList<Record> recommended;
         try (Session session = graph_driver.session()) {
@@ -328,6 +288,7 @@ public class Neo4jConnector {
         }
     }
 
+    // function that show how many users gained a level in the interval specified
     public void showLvlUpIE(String start, String end){
         try (Session session = graph_driver.session()) {
             ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
@@ -343,6 +304,7 @@ public class Neo4jConnector {
         }
     }
 
+    // function that show how many users gained a level in the interval specified
     public void showLvlUpBE(String start, String end) {
         try (Session session = graph_driver.session()) {
             ArrayList<Record> recommended = (ArrayList<Record>) session.readTransaction(tx -> {
@@ -358,6 +320,7 @@ public class Neo4jConnector {
         }
     }
 
+    //function to show users with the high number of past routines (or with the previous start_day of the first routine)
     public ArrayList<User> showMostFidelityUsers(int num){
 
         String date = LocalDate.now().toString();
@@ -388,7 +351,7 @@ public class Neo4jConnector {
     public ArrayList<Workout> showRoutines(String user, String period){
         ArrayList<Record> routines;
         try ( Session session = graph_driver.session() ) {
-            routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
+            routines = (ArrayList<Record>) session.readTransaction(tx-> {
                 List<Record> records;
                 String c_day = LocalDate.now().toString();
                 if(period.equals("all"))
@@ -399,7 +362,6 @@ public class Neo4jConnector {
                 else
                     records = tx.run("MATCH (a:User) -[:HAS_ROUTINE]->(b:Routine) WHERE a.user_id = $user AND b.end_day >= $date RETURN b AS routine",
                             parameters("user",user, "date", c_day)).list();
-                ArrayList<Record> results = new ArrayList<>();
                 return records;
             });
         }

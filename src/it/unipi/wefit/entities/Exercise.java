@@ -106,9 +106,11 @@ public class Exercise {
             System.out.println("Details:\n" + details+"\n");
     }
 
-    public void print(){
+    public void print(boolean w){
         System.out.printf("%60s %20s %15s %15s", name,muscle_targeted,
                 equipment,type);
+        if(w)
+            System.out.printf("%15s", weight);
         System.out.println();
     }
 }

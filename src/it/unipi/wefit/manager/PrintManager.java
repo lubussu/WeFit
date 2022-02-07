@@ -4,8 +4,6 @@ import it.unipi.wefit.entities.Comment;
 import it.unipi.wefit.entities.Exercise;
 import it.unipi.wefit.entities.User;
 import it.unipi.wefit.entities.Workout;
-import org.bson.Document;
-import org.neo4j.driver.internal.RoutingErrorHandler;
 
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -39,7 +37,7 @@ public class PrintManager {
         System.out.println("---------------------------------------------------------------------------------------------------------------------");
         for(int i=0;i<exs.size();i++) {
             System.out.printf("%5s", (i+1)+") ");
-            exs.get(i).print();
+            exs.get(i).print(false);
             cycle++;
             if(cycle == num){
                 System.out.println("Insert m to see more or another key to continue...");

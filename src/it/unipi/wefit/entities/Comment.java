@@ -3,7 +3,6 @@ package it.unipi.wefit.entities;
 
 import org.bson.Document;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.Date;
 import lombok.*;
 import org.bson.types.ObjectId;
