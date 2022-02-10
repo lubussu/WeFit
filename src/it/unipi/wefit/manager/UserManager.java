@@ -40,7 +40,7 @@ public class UserManager {
     //function for comment a routine
     public void addComment(String routine_id) throws IOException {
         String input;
-        System.out.println("Insert the comment you want to add or press r to return...");
+        System.out.println("Insert the comment you want to add or press 'r' to return...");
         input = bufferRead.readLine();
         if(input.equals("r"))
             return;
@@ -66,7 +66,7 @@ public class UserManager {
 
     //function for vote a routine
     public void addVote(String routine_id){
-        System.out.println("Please insert your vote (1-5) or press r to return...");
+        System.out.println("Please insert your vote (1-5) or press 'r' to return...");
         String vote_string = insertNumber();
         int vote = Integer.parseInt(vote_string);
 
@@ -330,7 +330,7 @@ public class UserManager {
 
     //function for set filters for search user(s)
     public void findUser() throws IOException {
-        System.out.println("\nInsert filters for find a user or press 8 to see reccomended users..");
+        System.out.println("\nInsert filters for find a user or press 8 to see recommended users..");
         System.out.println("1) User_id");
         System.out.println("2) Name");
         System.out.println("3) Gender");
@@ -338,7 +338,7 @@ public class UserManager {
         System.out.println("5) Trainer");
         System.out.println("6) Height");
         System.out.println("7) Weight");
-        System.out.println("8) See reccomended users");
+        System.out.println("8) See recommended users");
         System.out.println("0) Search user(s)\n");
         System.out.println("Select an option or press 'r' to return...");
         ArrayList<Bson> filters = new ArrayList<>();
@@ -444,7 +444,7 @@ public class UserManager {
     //function to see top n followed users
     public void mostFollowedUsers() throws IOException {
         String input;
-        System.out.println("Insert the value of n or press r to return");
+        System.out.println("Insert the value of n or press 'r' to return");
         while(true){
             input = sc.next();
             if(input.equals("r"))
@@ -460,7 +460,7 @@ public class UserManager {
     //function to see top n rated trainers
     public void mostRatedTrainers() throws IOException {
         String input;
-        System.out.println("Insert the value of n or press r to return");
+        System.out.println("Insert the value of n or press 'r' to return");
         while(true){
             input = sc.next();
             if(input.equals("r"))
@@ -816,10 +816,10 @@ public class UserManager {
         String name, gender, yob, height, weight, training, bg, exp, email, password, level;
         System.out.println("""
                 Your are signing-up as a new user, please insert your credentials
-                If you want to return press r
+                If you want to return press 'r'
                 """);
 
-        System.out.println("Insert your name...");
+        System.out.println("Insert your name and surname...");
         name = bufferRead.readLine();
         if(name.equals("r"))
             return true;
@@ -830,9 +830,9 @@ public class UserManager {
         gender = gender.replace(gender.substring(0,1), gender.substring(0,1).toUpperCase());
         System.out.println("Insert your year of birth...");
         yob = insertNumber();
-        System.out.println("Insert your height...");
+        System.out.println("Insert your height in cm...");
         height = insertNumber();
-        System.out.println("Insert your weight...");
+        System.out.println("Insert your weight in kg...");
         weight = insertNumber();
         System.out.println("Insert your level (Beginner/Intermediate/Expert)...");
         level = sc.next();
@@ -861,6 +861,10 @@ public class UserManager {
             return true;
         password = new DigestUtils("SHA3-256").digestAsHex(password);
         int user = mongoDb.lastUser();
+        if(user == -1){
+            System.err.println("Error! Unable to Sign up");
+            return true;
+        }
         self = new User(name, gender, yob, height, weight, training, bg, exp, email, password, level, "no", Integer.toString(user));
 
         //management of the consistency among db

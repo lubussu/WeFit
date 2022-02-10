@@ -32,7 +32,7 @@ public class TrainerManager extends UserManager{
             String input;
             switch (r) {
                 case 0 -> {
-                    System.out.println("\nInsert the name of the new exercise or press r to return...");
+                    System.out.println("\nInsert the name of the new exercise or press 'r' to return...");
                     input = bufferRead.readLine();
                     if (input.equals("r"))
                         return;
@@ -40,7 +40,7 @@ public class TrainerManager extends UserManager{
                     r++;
                 }
                 case 1 -> {
-                    System.out.println("\nInsert the type of the new exercise or press r to return...");
+                    System.out.println("\nInsert the type of the new exercise or press 'r' to return...");
                     input = bufferRead.readLine();
                     if (input.equals("r"))
                         return;
@@ -48,7 +48,7 @@ public class TrainerManager extends UserManager{
                     r++;
                 }
                 case 2 -> {
-                    System.out.println("\nSelect the number of the muscle target of the new exercise or press r to return...");
+                    System.out.println("\nSelect the number of the muscle target of the new exercise or press 'r' to return...");
                     for (int i = 0; i < Muscles.length; i++) {
                         System.out.println(i + ") " + Muscles[i]);
                     }
@@ -68,7 +68,7 @@ public class TrainerManager extends UserManager{
                     }
                 }
                 case 3 -> {
-                    System.out.println("\nInsert the equipment of the new exercise or press r to return...");
+                    System.out.println("\nInsert the equipment of the new exercise or press 'r' to return...");
                     input = bufferRead.readLine();
                     if (input.equals("r"))
                         return;
@@ -76,7 +76,7 @@ public class TrainerManager extends UserManager{
                     r++;
                 }
                 case 4 -> {
-                    System.out.println("\nSelect the level of the new exercise or press r to return...");
+                    System.out.println("\nSelect the level of the new exercise or press 'r' to return...");
                     for (int i = 0; i < 3; i++) {
                         System.out.println(i + ") " + Levels[i]);
                     }
@@ -96,7 +96,7 @@ public class TrainerManager extends UserManager{
                     }
                 }
                 case 5 -> {
-                    System.out.println("\nInsert the first image's link of the new exercise or press r to return...");
+                    System.out.println("\nInsert the first image's link of the new exercise or press 'r' to return...");
                     input = bufferRead.readLine();
                     if (input.equals("r"))
                         return;
@@ -104,7 +104,7 @@ public class TrainerManager extends UserManager{
                     r++;
                 }
                 case 6 -> {
-                    System.out.println("\nInsert the second image's link of the new exercise or press r to return...");
+                    System.out.println("\nInsert the second image's link of the new exercise or press 'r' to return...");
                     input = bufferRead.readLine();
                     if (input.equals("r"))
                         return;
@@ -112,7 +112,7 @@ public class TrainerManager extends UserManager{
                     r++;
                 }
                 case 7 -> {
-                    System.out.println("\nWrite an explanation of the new exercise or press r to return...");
+                    System.out.println("\nWrite an explanation of the new exercise or press 'r' to return...");
                     input = bufferRead.readLine();
                     if (input.equals("r"))
                         return;
@@ -121,7 +121,7 @@ public class TrainerManager extends UserManager{
                 }
             }
         }
-        System.out.println("Press any key to insert or press r to return..");
+        System.out.println("Press any key to insert or press 'r' to return..");
         if(sc.next().equals("r"))
             return;
 
@@ -133,7 +133,7 @@ public class TrainerManager extends UserManager{
 
     //change a user from normal user to trainer
     public void addTrainer() throws IOException {
-        System.out.println("Insert the name or the user_id of the user you want to promote or press r to return..");
+        System.out.println("Insert the name or the user_id of the user you want to promote or press 'r' to return..");
 
         String input = bufferRead.readLine();
         if(input.equals("r"))
@@ -158,7 +158,7 @@ public class TrainerManager extends UserManager{
     public void createRoutine() throws IOException {
 
         // insert name and query the db for the user
-        System.out.println("\nInsert the name of the user or the user_id or press r to return...");
+        System.out.println("\nInsert the name of the user or the user_id or press 'r' to return...");
         String search_name;
         search_name = bufferRead.readLine();
         if(search_name.equals("r"))
@@ -215,7 +215,7 @@ public class TrainerManager extends UserManager{
         }
 
 
-        System.out.println("Insert the level of the routine or press r to return...");
+        System.out.println("Insert the level of the routine or press 'r' to return...");
         String level = sc.next();
         if(level.equals("r"))
             return;
@@ -235,7 +235,7 @@ public class TrainerManager extends UserManager{
                 LocalDate.now().plusMonths(1).toString(), null, 0, 0);
 
 
-        System.out.println("Press any key to insert or press r to return..");
+        System.out.println("Press any key to insert or press 'r' to return..");
 
         if(sc.next().equals("r"))
             return;
@@ -265,8 +265,8 @@ public class TrainerManager extends UserManager{
         Exercise exercise;
         String fetch;
         while(true) {
-            if(muscle == null)  System.out.println("\nInsert an exercise's name or press r to return..");
-            else System.out.println("\nInsert an exercise's name per muscle " + muscle + " or press r to return...");
+            if(muscle == null)  System.out.println("\nInsert an exercise's name or press 'r' to return..");
+            else System.out.println("\nInsert an exercise's name per muscle " + muscle + " or press 'r' to return...");
 
             fetch = bufferRead.readLine();
             if(fetch.equals("r"))
@@ -314,7 +314,7 @@ public class TrainerManager extends UserManager{
         String s;
 
         System.out.println("Insert the number of routine you want to consider...\nand the number of exercises you want to show" +
-                "or press r to return...");
+                "or press 'r' to return...");
         s = sc.next();
         if(s.equals("r")) return;
         int max_vote = Integer.parseInt(s);
@@ -378,7 +378,7 @@ public class TrainerManager extends UserManager{
     public void showAvgAgeLvl(){
         String threshold;
 
-        System.out.println("Insert the age you want to consider or press r to return...");
+        System.out.println("Insert the age you want to consider or press 'r' to return...");
         while(true) {
             threshold = sc.next();
             if (threshold.equals("r"))

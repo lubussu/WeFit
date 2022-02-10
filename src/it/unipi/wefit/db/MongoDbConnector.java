@@ -130,8 +130,21 @@ public class MongoDbConnector {
         if(docs.size()==1)
             return docs.get(0);
         System.out.println("\nList of users with the insert name");
+        int counter = 0;
+        Scanner next = new Scanner(System.in);
+        String go = "";
         for(Document document :  docs){
             System.out.println(document.getString("user_id")+"\t"+document.getString("name"));
+            counter++;
+            if(counter == 9){
+                System.out.println("Insert m to see more or another key to continue...");
+                go = next.next();
+                if(go.equals("m")) {
+                    counter = 0;
+                    continue;
+                }
+                else break;
+            }
         }
         System.out.println("\nSelect a user_id");
         Scanner sc = new Scanner(System.in);
