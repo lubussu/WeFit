@@ -149,6 +149,26 @@ public class Neo4jConnector {
     }
 
     //function to return an ArrayList of the most num followed users
+    public ArrayList<Workout> mostCommentedRoutines(int num){
+        String query = "MATCH ()-[c:COMMENT]->(r:Routine) "+
+                "WITH r, SUM(c.num) AS num_comments "+
+                "RETURN r AS routine, num_comments ORDER BY num_comments DESC LIMIT $num";
+
+        ArrayList<Record> routines;
+        try ( Session session = graph_driver.session() ) {
+            routines = (ArrayList<Record>) session.readTransaction(tx -> {
+                List<Record> records;
+                records = tx.run("MATCH ()-[c:COMMENT]->(r:Routine) "+
+                        "WITH r, SUM(c.num) AS num_comments "+
+                        "RETURN r AS routine, num_comments ORDER BY num_comments DESC LIMIT $num",
+                        parameters("num", num)).list();
+                return records;
+            });
+        }
+        return returnRoutines(routines);
+    }
+
+    //function to return an ArrayList of the most num followed users
     public ArrayList<User> mostFollowedUsers(int num){
         String query = "MATCH ()-[f:FOLLOW]->(u:User) "+
                 "WITH u, COUNT(f) AS num_followers "+

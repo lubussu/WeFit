@@ -40,7 +40,7 @@ public class UserManager {
     //function for comment a routine
     public void addComment(String routine_id) throws IOException {
         String input;
-        System.out.println("Insert the comment you want to add or press 'r' to return...");
+        System.out.println("Insert the comment you want to add or press r to return...");
         input = bufferRead.readLine();
         if(input.equals("r"))
             return;
@@ -66,7 +66,7 @@ public class UserManager {
 
     //function for vote a routine
     public void addVote(String routine_id){
-        System.out.println("Please insert your vote (1-5) or press 'r' to return...");
+        System.out.println("Please insert your vote (1-5) or press r to return...");
         String vote_string = insertNumber();
         int vote = Integer.parseInt(vote_string);
 
@@ -318,7 +318,7 @@ public class UserManager {
                 }
                 case "0": {
                     ArrayList<Workout> works = mongoDb.searchRoutines(filters);
-                    optionsRoutines(works);
+                    optionsRoutines(works, true);
                 }
                 case "r":
                     return;
@@ -330,7 +330,7 @@ public class UserManager {
 
     //function for set filters for search user(s)
     public void findUser() throws IOException {
-        System.out.println("\nInsert filters for find a user or press 8 to see recommended users..");
+        System.out.println("\nInsert filters for find a user or press 8 to see reccomended users..");
         System.out.println("1) User_id");
         System.out.println("2) Name");
         System.out.println("3) Gender");
@@ -338,7 +338,7 @@ public class UserManager {
         System.out.println("5) Trainer");
         System.out.println("6) Height");
         System.out.println("7) Weight");
-        System.out.println("8) See recommended users");
+        System.out.println("8) See reccomended users");
         System.out.println("0) Search user(s)\n");
         System.out.println("Select an option or press 'r' to return...");
         ArrayList<Bson> filters = new ArrayList<>();
@@ -444,7 +444,7 @@ public class UserManager {
     //function to see top n followed users
     public void mostFollowedUsers() throws IOException {
         String input;
-        System.out.println("Insert the value of n or press 'r' to return");
+        System.out.println("Insert the value of n or press r to return");
         while(true){
             input = sc.next();
             if(input.equals("r"))
@@ -460,7 +460,7 @@ public class UserManager {
     //function to see top n rated trainers
     public void mostRatedTrainers() throws IOException {
         String input;
-        System.out.println("Insert the value of n or press 'r' to return");
+        System.out.println("Insert the value of n or press r to return");
         while(true){
             input = sc.next();
             if(input.equals("r"))
@@ -471,6 +471,22 @@ public class UserManager {
                 break;
         }
         optionsUsers(neo4j.mostRatedTrainers(Integer.parseInt(input)), true, false);
+    }
+
+    //function to see top n rated trainers
+    public void mostCommentedRoutines() throws IOException {
+        String input;
+        System.out.println("Insert the value of n or press r to return");
+        while(true){
+            input = sc.next();
+            if(input.equals("r"))
+                return;
+            if(!input.matches("[0-9.]+"))
+                System.out.println("Please insert a numeric value");
+            else
+                break;
+        }
+        optionsRoutines(neo4j.mostCommentedRoutines(Integer.parseInt(input)), false);
     }
 
     //function for all the possible operations on a routine
@@ -518,9 +534,10 @@ public class UserManager {
     }
 
     //function to manage the operation on a list of routines (select one....)
-    public void optionsRoutines(ArrayList<Workout> works) throws IOException {
+    public void optionsRoutines(ArrayList<Workout> works, boolean print) throws IOException {
         while (true) {
-            PrintManager.printRoutines(works, 10);
+            if(print)
+                PrintManager.printRoutines(works, 10);
             Workout w = selectRoutine(works);
             if (w == null)
                 return;
@@ -599,14 +616,14 @@ public class UserManager {
                     input = sc.next();
                     switch (input) {
                         case "1" -> //se own routines
-                                optionsRoutines(neo4j.showRoutines(id.replace("\"", ""), "all"));
+                                optionsRoutines(neo4j.showRoutines(id.replace("\"", ""), "all"), true);
                         case "2" -> //see created routines
-                                optionsRoutines(neo4j.showCreatedRoutines(id.replace("\"", "")));
+                                optionsRoutines(neo4j.showCreatedRoutines(id.replace("\"", "")), true);
                     }
                     break;
                 }
                 else { // the user is not a trainer, see his routines
-                    optionsRoutines(neo4j.showRoutines(id.replace("\"", ""), "all"));
+                    optionsRoutines(neo4j.showRoutines(id.replace("\"", ""), "all"), true);
                     break;
                 }
             }
@@ -782,8 +799,9 @@ public class UserManager {
                     7)  Find a user by parameter
                     8)  Find n-most rated personal trainer
                     9)  Find n-most followed users
-                    10) Modify your profile
-                    11) Log out
+                    10) Find n-most commented routines
+                    11) Modify your profile
+                    12) Log out
                     0)  Exit""");
             String input = sc.next();
             switch (input) {
@@ -796,8 +814,9 @@ public class UserManager {
                 case "7" -> findUser();
                 case "8" -> mostRatedTrainers();
                 case "9" -> mostFollowedUsers();
-                case "10" -> changeProfile();
-                case "11" -> {
+                case "10" -> mostCommentedRoutines();
+                case "11" -> changeProfile();
+                case "12" -> {
                     running = false;
                     System.out.println("Bye bye\n");
                 }
@@ -816,10 +835,10 @@ public class UserManager {
         String name, gender, yob, height, weight, training, bg, exp, email, password, level;
         System.out.println("""
                 Your are signing-up as a new user, please insert your credentials
-                If you want to return press 'r'
+                If you want to return press r
                 """);
 
-        System.out.println("Insert your name and surname...");
+        System.out.println("Insert your name...");
         name = bufferRead.readLine();
         if(name.equals("r"))
             return true;
@@ -830,9 +849,9 @@ public class UserManager {
         gender = gender.replace(gender.substring(0,1), gender.substring(0,1).toUpperCase());
         System.out.println("Insert your year of birth...");
         yob = insertNumber();
-        System.out.println("Insert your height in cm...");
+        System.out.println("Insert your height...");
         height = insertNumber();
-        System.out.println("Insert your weight in kg...");
+        System.out.println("Insert your weight...");
         weight = insertNumber();
         System.out.println("Insert your level (Beginner/Intermediate/Expert)...");
         level = sc.next();
@@ -861,10 +880,11 @@ public class UserManager {
             return true;
         password = new DigestUtils("SHA3-256").digestAsHex(password);
         int user = mongoDb.lastUser();
-        if(user == -1){
-            System.err.println("Error! Unable to Sign up");
+        if (user == -1){
+            System.err.println("Error! Unable to signUp\n");
             return true;
         }
+
         self = new User(name, gender, yob, height, weight, training, bg, exp, email, password, level, "no", Integer.toString(user));
 
         //management of the consistency among db
@@ -900,12 +920,12 @@ public class UserManager {
 
     //show routines commented by the logged user
     public void showCommentedRoutines() throws IOException {
-        optionsRoutines(neo4j.showCommentedRoutines(self.getUser_id()));
+        optionsRoutines(neo4j.showCommentedRoutines(self.getUser_id()), true);
     }
 
     //function to see the current routine
     public void showCurrentRoutine() throws IOException {
-        optionsRoutines(neo4j.showRoutines(self.getUser_id(), "current"));
+        optionsRoutines(neo4j.showRoutines(self.getUser_id(), "current"), true);
     }
 
     //function to list of followed users
@@ -920,7 +940,7 @@ public class UserManager {
 
     //function to see past routines
     public void showPastRoutines() throws IOException {
-        optionsRoutines(neo4j.showRoutines(self.getUser_id(), "past"));
+        optionsRoutines(neo4j.showRoutines(self.getUser_id(), "past"), true);
     }
 
 }

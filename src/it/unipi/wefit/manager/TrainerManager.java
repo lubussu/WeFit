@@ -395,7 +395,7 @@ public class TrainerManager extends UserManager{
 
     //function to see routines created by the trainer
     public void showCreatedRoutines() throws IOException {
-        optionsRoutines(neo4j.showCreatedRoutines(self.getUser_id()));
+        optionsRoutines(neo4j.showCreatedRoutines(self.getUser_id()), false);
     }
 
     //function that show how many users levelled up in the ginven period
