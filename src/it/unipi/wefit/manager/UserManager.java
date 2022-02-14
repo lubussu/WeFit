@@ -717,6 +717,8 @@ public class UserManager {
 
     //function to select an exercise from given exercises
     protected Exercise selectExercise(ArrayList<Exercise> exs, boolean print){
+        if(exs == null)
+            return null;
         PrintManager.printExercises(exs, 10);
         String input;
         while (true) {
@@ -803,9 +805,11 @@ public class UserManager {
                     5)  See routines you commented
                     6)  Find a routine by parameter
                     7)  Find a user by parameter
+                    ----------ANALYTICS----------
                     8)  Find n-most rated personal trainer
                     9)  Find n-most followed users
                     10) Find n-most commented routines
+                    -----------------------------
                     11) Modify your profile
                     12) Log out
                     0)  Exit""");
@@ -919,6 +923,10 @@ public class UserManager {
         }
 
         self = new User(name, gender, yob, height, weight, training, bg, exp, email, password, level, "no", Integer.toString(user));
+
+        System.out.println("Press any key to insert or press r to return...");
+        if(sc.next().equals("r"))
+            return true;
 
         //management of the consistency among db
         if(mongoDb.insertUser(self)){ //mongodb correctly inserted

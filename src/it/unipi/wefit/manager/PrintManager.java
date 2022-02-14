@@ -34,6 +34,7 @@ public class PrintManager {
     //function for print summary information of the given exercises
     public static void printExercises(ArrayList<Exercise> exs, int num){
         int cycle = 0;
+
         System.out.printf("%5s %60s %20s %15s %15s", "     ", "Name", "Muscle Targeted", "Equipment", "Type\n");
         System.out.println("---------------------------------------------------------------------------------------------------------------------");
         for(int i=0;i<exs.size();i++) {

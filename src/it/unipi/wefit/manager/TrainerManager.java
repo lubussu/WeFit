@@ -243,6 +243,7 @@ public class TrainerManager extends UserManager{
             fetch = bufferRead.readLine();
             if(fetch.equals("r"))
                 return null;
+
             exercise = selectExercise(mongoDb.searchExercises(fetch, muscle, type), false);
             if(exercise==null)
                 continue;
