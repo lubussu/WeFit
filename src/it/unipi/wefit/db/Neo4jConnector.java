@@ -3,6 +3,7 @@ package it.unipi.wefit.db;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import it.unipi.wefit.entities.*;
+import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.summary.ResultSummary;
 
 import java.math.BigDecimal;
@@ -10,13 +11,17 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+
 import static org.neo4j.driver.Values.parameters;
+
 
 public class Neo4jConnector {
     private final Driver graph_driver;
 
     public Neo4jConnector(String conn, String username, String password){
-            graph_driver = GraphDatabase.driver( conn, AuthTokens.basic( username, password ) );
+            graph_driver = GraphDatabase.driver(conn, AuthTokens.basic( username, password ),
+                    Config.builder().withLogging(new JULogging(Level.WARNING)).build());
     }
 
     //function for change profile's properties in the db
@@ -82,7 +87,6 @@ public class Neo4jConnector {
         try ( Session session = graph_driver.session() ) {
             routines = (ArrayList<Record>) session.readTransaction((TransactionWork<List<Record>>) tx-> {
                 List<Record> records;
-
 
                 records = tx.run("MATCH (a:User {user_id: $trainer}) -[:CREATE_ROUTINE]->(b:Routine) return b AS routine",
                         parameters("trainer",trainer)).list();
@@ -165,6 +169,19 @@ public class Neo4jConnector {
                 return records;
             });
         }
+        System.out.printf("%5s %10s %10s %15s %15s %15s %15s", "     ", "User", "Trainer", "Level", "Starting day", "End day","Comments\n");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+        for(int i=0; i<routines.size(); i++) {
+            Record r = routines.get(i);
+            System.out.printf("%5s %10s %10s %15s %15s %15s %15s", (i+1)+") ", r.get("routine").get("user").toString().replace("\"",""),
+                    r.get("routine").get("trainer").toString().replace("\"",""),
+                    r.get("routine").get("level").toString().replace("\"",""),
+                    r.get("routine").get("starting_day").toString().replace("\"",""),
+                    r.get("routine").get("end_day").toString().replace("\"",""),
+                    r.get("num_comments").toString());
+            System.out.println("\n");
+        }
+
         return returnRoutines(routines);
     }
 
@@ -224,7 +241,7 @@ public class Neo4jConnector {
     }
 
     //function to return an ArrayList<Routine> from a ArrayList<Document>
-    public ArrayList<Workout> returnRoutines(ArrayList<Record> routines){
+    private ArrayList<Workout> returnRoutines(ArrayList<Record> routines){
         ArrayList<Workout> works = new ArrayList<>();
         for(Record r: routines){
             works.add(new Workout(  r.get("routine").get("_id").toString().replace("\"", ""),
@@ -241,7 +258,7 @@ public class Neo4jConnector {
     }
 
     //function to return an ArrayList<User> from a ArrayList<Document>
-    public ArrayList<User> returnUsers(ArrayList<Record> users){
+    private ArrayList<User> returnUsers(ArrayList<Record> users){
         ArrayList<User> us = new ArrayList<>();
         for(Record r: users){
             us.add(new User(    r.get("user").get("name").toString().replace("\"", ""),

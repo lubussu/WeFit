@@ -21,6 +21,7 @@ public class PrintManager {
             System.out.println("Comment: "+ c.getComment());
             System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
 
+            cycle++;
             if(cycle == num){
                 System.out.println("Insert m to see more or another key to continue...");
                 Scanner sc = new Scanner(System.in);

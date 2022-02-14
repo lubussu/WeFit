@@ -84,7 +84,8 @@ public class MongoDbConnector {
     public Bson getFilter(String field, String value, String option){
 
         return switch (option) {
-            case "eq" -> (match(regex(field, ".*" + value + ".*", "i")));
+            case "like" -> (match(regex(field, ".*" + value + ".*", "i")));
+            case "eq"-> (match(eq(field, value)));
             case "lt" -> (match(lt(field, value)));
             case "lte" -> (match(lte(field, value)));
             case "gt" -> (match(gt(field, value)));
@@ -125,8 +126,10 @@ public class MongoDbConnector {
         Document user = new Document();
         ArrayList<Document> docs = new ArrayList<>();
         users.find(filter).into(docs);
-        if(docs.size()==0)
+        if(docs.size()==0) {
+            System.out.println("User not found");
             return null;
+        }
         if(docs.size()==1)
             return docs.get(0);
         System.out.println("\nList of users with the insert name");
@@ -169,12 +172,13 @@ public class MongoDbConnector {
     }
 
     //function to insert a new exercise in the db
-    public void insertNewExercise(Exercise exercise){
+    public boolean insertNewExercise(Exercise exercise){
         try {
-            exercises.insertOne(exercise.toDocument());
-            System.out.println("Success! Your new exercise has been inserted.");
+            InsertOneResult result = exercises.insertOne(exercise.toDocument());
+            return (result.getInsertedId() != null);
         } catch (MongoException me) {
             System.err.println("Unable to insert due to an error: " + me);
+            return false;
         }
     }
 

@@ -166,11 +166,11 @@ public class Workout {
         System.out.println("ROUTINE DETAILS");
         System.out.println("------------------------------------------------------------------------------------------------------------");
 
-        System.out.print("Trainer: " + trainer+"\t");
+        System.out.print("Trainer: " + trainer+"\t\t");
         System.out.print("Level: " + level+"\n");
-        System.out.print("Starting_day: " + starting_day+"\t");
+        System.out.print("Starting_day: " + starting_day+"\t\t");
         System.out.print("End_day: " + end_day+"\n");
-        System.out.print("Work_time(sec): " + work_time+"\t");
+        System.out.print("Work_time(sec): " + work_time+"\t\t");
         System.out.print("Rest_time(sec): " + rest_time+"\n");
         System.out.println("Average vote: " + vote+"\n\n");
 

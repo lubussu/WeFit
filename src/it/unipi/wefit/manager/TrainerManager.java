@@ -1,7 +1,7 @@
 package it.unipi.wefit.manager;
 
-import it.unipi.wefit.db.*;
 import it.unipi.wefit.entities.*;
+import org.bson.Document;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -10,117 +10,84 @@ import java.util.*;
 public class TrainerManager extends UserManager{
 
     private final String[] Muscles = {"Shoulders", "Traps", "Biceps", "Neck", "Lower Back", "Adductors", "Forearms", "Hamstrings", "Lats", "Middle Back", "Glutes", "Chest", "Abdominals", "Quadriceps", "Abductors", "Calves", "Triceps"};
-    private final String[] Levels = {"Beginner", "Intermediate", "Expert"};
 
-    public TrainerManager(User trainer, MongoDbConnector mongo){
-        super(trainer, mongo);
+    public TrainerManager(User trainer){
+        super(trainer);
     }
 
     //function to add a new exercise
-    public void addExercise() throws IOException {
-        int r = 0;
-        String exerciseName = null;
-        String exerciseType = null;
-        String exerciseMuscle = null;
-        String exerciseEquipment = null;
-        String exerciseLevel = null;
-        String exerciseImage1 = null;
-        String exerciseImage2 = null;
-        String exerciseDetails = null;
+    private void addExercise() throws IOException {
+        String input;
 
-        while(r<8) {
-            String input;
-            switch (r) {
-                case 0 -> {
-                    System.out.println("\nInsert the name of the new exercise or press 'r' to return...");
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    exerciseName = input;
-                    r++;
-                }
-                case 1 -> {
-                    System.out.println("\nInsert the type of the new exercise or press 'r' to return...");
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    exerciseType = input;
-                    r++;
-                }
-                case 2 -> {
-                    System.out.println("\nSelect the number of the muscle target of the new exercise or press 'r' to return...");
-                    for (int i = 0; i < Muscles.length; i++) {
-                        System.out.println(i + ") " + Muscles[i]);
-                    }
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    if (Integer.parseInt(input) > Muscles.length) {
-                        System.out.println("\nMuscle target not found... please select again");
-                        r = 2;
-                    } else {
-                        for (int j = 0; j < Muscles.length; j++) {
-                            if (Integer.parseInt(input) == j) {
-                                exerciseMuscle = Muscles[j];
-                                r++;
-                            }
-                        }
-                    }
-                }
-                case 3 -> {
-                    System.out.println("\nInsert the equipment of the new exercise or press 'r' to return...");
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    exerciseEquipment = input;
-                    r++;
-                }
-                case 4 -> {
-                    System.out.println("\nSelect the level of the new exercise or press 'r' to return...");
-                    for (int i = 0; i < 3; i++) {
-                        System.out.println(i + ") " + Levels[i]);
-                    }
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    if (Integer.parseInt(input) > 3) {
-                        System.out.println("\nLevel not valid... please select again");
-                        r = 4;
-                    } else {
-                        for (int j = 0; j < 3; j++) {
-                            if (Integer.parseInt(input) == j) {
-                                exerciseLevel = Levels[j];
-                                r++;
-                            }
-                        }
-                    }
-                }
-                case 5 -> {
-                    System.out.println("\nInsert the first image's link of the new exercise or press 'r' to return...");
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    exerciseImage1 = input;
-                    r++;
-                }
-                case 6 -> {
-                    System.out.println("\nInsert the second image's link of the new exercise or press 'r' to return...");
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    exerciseImage2 = input;
-                    r++;
-                }
-                case 7 -> {
-                    System.out.println("\nWrite an explanation of the new exercise or press 'r' to return...");
-                    input = bufferRead.readLine();
-                    if (input.equals("r"))
-                        return;
-                    exerciseDetails = input;
-                    r++;
-                }
+        System.out.println("\nInsert the name of the new exercise or press 'r' to return...");
+        input = bufferRead.readLine();
+        if (input.equals("r"))
+            return;
+        String exerciseName = input;
+
+        System.out.println("\nInsert the type of the new exercise or press 'r' to return...");
+        input = bufferRead.readLine();
+        if (input.equals("r"))
+            return;
+        String exerciseType = input;
+
+        String exerciseMuscle;
+        while(true) {
+            System.out.println("\nSelect the number of the muscle target of the new exercise or press 'r' to return...");
+            for (int i = 0; i < Muscles.length; i++) {
+                System.out.println(i + ") " + Muscles[i]);
+            }
+            input = bufferRead.readLine();
+            if (input.equals("r"))
+                return;
+            else if (!input.matches("[0-9.]+") || Integer.parseInt(input) > Muscles.length)
+                System.out.println("\nMuscle target not found... please select again");
+            else {
+                exerciseMuscle = Muscles[Integer.parseInt(input)];
+                break;
             }
         }
+
+        System.out.println("\nInsert the equipment of the new exercise or press 'r' to return...");
+        input = bufferRead.readLine();
+        if (input.equals("r"))
+            return;
+        String exerciseEquipment = input;
+
+        String exerciseLevel;
+        System.out.println("Insert the exercise level (Beginner/Intermediate/Expert)...");
+        while(true) {
+            exerciseLevel = sc.next();
+            if (exerciseLevel.equals("r"))
+                return;
+            exerciseLevel = exerciseLevel.replace(exerciseLevel.substring(0, 1), exerciseLevel.substring(0, 1).toUpperCase());
+            if(!exerciseLevel.equals("Beginner") && !exerciseLevel.equals("Intermediate") && !exerciseLevel.equals("Expert"))
+                System.out.println("Please try again");
+            else
+                break;
+        }
+
+        System.out.println("\nInsert the first image's link of the new exercise or press 'r' to return...");
+        input = bufferRead.readLine();
+        String exerciseImage1;
+        if (input.equals("r"))
+            return;
+        exerciseImage1 = input;
+
+        System.out.println("\nInsert the second image's link of the new exercise or press 'r' to return...");
+        input = bufferRead.readLine();
+        String exerciseImage2;
+        if (input.equals("r"))
+            return;
+        exerciseImage2 = input;
+
+        System.out.println("\nWrite an explanation of the new exercise or press 'r' to return...");
+        input = bufferRead.readLine();
+        String exerciseDetails;
+        if (input.equals("r"))
+            return;
+        exerciseDetails = input;
+
         System.out.println("Press any key to insert or press 'r' to return..");
         if(sc.next().equals("r"))
             return;
@@ -128,11 +95,12 @@ public class TrainerManager extends UserManager{
         Exercise new_ex = new Exercise(exerciseName,exerciseType,exerciseMuscle, exerciseEquipment,
                                 exerciseLevel,exerciseImage1,exerciseImage2,exerciseDetails);
 
-        mongoDb.insertNewExercise(new_ex);
+        if(mongoDb.insertNewExercise(new_ex))
+            System.out.println("Success! Your new exercise has been inserted.");
     }
 
     //change a user from normal user to trainer
-    public void addTrainer() throws IOException {
+    private void addTrainer() throws IOException {
         System.out.println("Insert the name or the user_id of the user you want to promote or press 'r' to return..");
 
         String input = bufferRead.readLine();
@@ -155,7 +123,7 @@ public class TrainerManager extends UserManager{
     }
 
     // Create a routine for a user
-    public void createRoutine() throws IOException {
+    private void createRoutine() throws IOException {
 
         // insert name and query the db for the user
         System.out.println("\nInsert the name of the user or the user_id or press 'r' to return...");
@@ -165,13 +133,11 @@ public class TrainerManager extends UserManager{
             return;
         String user = search_name;
         if(!search_name.matches("[0-9.]+")) {
-            User u = new User(mongoDb.getUser(search_name));
-            if(u != null)
-                user = u.getUser_id();
-            else {
+            Document d = mongoDb.getUser(search_name);
+            if(d==null)
                 System.out.println("User not found");
-                return;
-            }
+            User u = new User(d);
+            user = u.getUser_id();
         }
 
         // create variables for building the document
@@ -214,12 +180,18 @@ public class TrainerManager extends UserManager{
             if(fetch.equals("no")) running++;
         }
 
-
-        System.out.println("Insert the level of the routine or press 'r' to return...");
-        String level = sc.next();
-        if(level.equals("r"))
-            return;
-        level = level.replace(level.substring(0,1), level.substring(0,1).toUpperCase());
+        String level;
+        System.out.println("Insert the routine level (Beginner/Intermediate/Expert) or press r to return...");
+        while(true) {
+            level = sc.next();
+            if (level.equals("r"))
+                return;
+            level = level.replace(level.substring(0, 1), level.substring(0, 1).toUpperCase());
+            if(!level.equals("Beginner") && !level.equals("Intermediate") && !level.equals("Expert"))
+                System.out.println("Please try again");
+            else
+                break;
+        }
 
         System.out.println("Insert the work time (sec)...");
         String work = insertNumber();
@@ -261,7 +233,7 @@ public class TrainerManager extends UserManager{
     }
 
     //function for insert an exercise in a new routine
-    public Exercise insertExercise(String muscle, String type) throws IOException {
+    private Exercise insertExercise(String muscle, String type) throws IOException {
         Exercise exercise;
         String fetch;
         while(true) {
@@ -287,10 +259,13 @@ public class TrainerManager extends UserManager{
     }
 
     //function that find the most used equipment in general and for the selected muscle group
-    public void mostUsedEquipment() throws IOException {
+    private void mostUsedEquipment() throws IOException {
         System.out.printf("%15s %15s %10s", "MUSCLE", "EQUIPMENT", "COUNT");
         System.out.println("\n----------------------------------------------");
         mongoDb.mostUsedEquipment(null);
+        System.out.println("Press r to return or any key to continue..");
+        if(sc.next().equals("r"))
+            return;
         while(true){
             System.out.println("\nInsert the muscle you want to see or press r to return...");
             for (int i = 0; i < Muscles.length; i++) {
@@ -306,11 +281,15 @@ public class TrainerManager extends UserManager{
             System.out.printf("%15s %15s %10s", "MUSCLE", "EQUIPMENT", "COUNT");
             System.out.println("\n----------------------------------------------");
             mongoDb.mostUsedEquipment(Muscles[Integer.parseInt(input)]);
+
+            System.out.println("Press r to return or any key to continue..");
+            if(sc.next().equals("r"))
+                return;
         }
     }
 
     //function for show the most present exercise in the top-n rated routines
-    public void mostVotedPresentExercises(){
+    private void mostVotedPresentExercises(){
         String s;
 
         System.out.println("Insert the number of routine you want to consider...\nand the number of exercises you want to show" +
@@ -328,8 +307,9 @@ public class TrainerManager extends UserManager{
         sc.next();
     }
 
-    public boolean sessionTrainer() throws IOException {
-        System.out.println("WELCOME " + self.getName());
+    //session function (trainer menu)
+    @Override
+    public boolean session() throws IOException {
         boolean running = true;
         while(running) {
             System.out.println("""
@@ -354,7 +334,7 @@ public class TrainerManager extends UserManager{
                 case "2" -> createRoutine();
                 case "3" -> addExercise();
                 case "4" -> addTrainer();
-                case "5" -> session();
+                case "5" -> super.session();
                 case "6" -> showAvgAgeLvl();
                 case "7" -> showMostFidelityUsers();
                 case "8" -> mostUsedEquipment();
@@ -375,7 +355,7 @@ public class TrainerManager extends UserManager{
     }
 
     //function that show the average age for each level and the most common level for the selected age
-    public void showAvgAgeLvl(){
+    private void showAvgAgeLvl(){
         String threshold;
 
         System.out.println("Insert the age you want to consider or press 'r' to return...");
@@ -394,12 +374,12 @@ public class TrainerManager extends UserManager{
     }
 
     //function to see routines created by the trainer
-    public void showCreatedRoutines() throws IOException {
-        optionsRoutines(neo4j.showCreatedRoutines(self.getUser_id()), false);
+    private void showCreatedRoutines() throws IOException {
+        optionsRoutines(neo4j.showCreatedRoutines(self.getUser_id()), true);
     }
 
     //function that show how many users levelled up in the ginven period
-    public void showLvlUp(){
+    private void showLvlUp(){
         String start, end;
 
         System.out.println("Insert the starting date (yyyy-mm-dd)...");
@@ -420,7 +400,7 @@ public class TrainerManager extends UserManager{
     }
 
     //function to show users with the high number of past routines (or with the previous start_day of the first routine)
-    public void showMostFidelityUsers() throws IOException {
+    private void showMostFidelityUsers() throws IOException {
         int num;
         System.out.println("Insert the number of user you want to see or press r to return...");
 
