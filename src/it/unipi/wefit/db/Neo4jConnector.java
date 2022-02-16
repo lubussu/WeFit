@@ -213,8 +213,8 @@ public class Neo4jConnector {
 
     //function to return an ArrayList of the most num rated trainers
     public ArrayList<User> mostRatedTrainers(int num){
-        String query = "MATCH ()-[v:VOTE]->(r:Routine)<-[:CREATE_ROUTINE]-(u:User) "+
-                "WITH u, AVG(toInteger(v.vote)) AS avg_vote "+
+        String query = "MATCH (u:User)-[:CREATE_ROUTINE]->(r:Routine)"+
+                "WITH u, AVG(toInteger(r.vote)) AS avg_vote "+
                 "RETURN u AS user, avg_vote ORDER BY avg_vote DESC LIMIT $num";
 
         ArrayList<Record> trainers;
